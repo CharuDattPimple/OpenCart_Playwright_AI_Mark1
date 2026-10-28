@@ -1,0 +1,2 @@
+username mor_2314 and password 83r5^_
+User authenticated successfully using username mor_2314 and password 83r5^_ and got token as eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsInVzZXIiOiJtb3JfMjMxNCIsImlhdCI6MTc5MzE3MjUxM30.lUPDdua2jMLR_qdya0d3ifbpAIDOWwQdljePKUrQjB4

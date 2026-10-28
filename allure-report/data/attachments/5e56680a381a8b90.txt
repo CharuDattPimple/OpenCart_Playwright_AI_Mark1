@@ -1,0 +1,8 @@
+ New Product created using id 21 {
+  "id": 21,
+  "title": "Refined Wooden Chair",
+  "price": 212.8,
+  "description": "The Smart 24/7 success Chicken offers reliable performance and flawed design",
+  "image": "https://picsum.photos/seed/x59XO8h0Ef/1736/762",
+  "category": "home"
+}

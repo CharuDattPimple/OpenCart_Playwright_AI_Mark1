@@ -1,0 +1,8 @@
+ New Product created using id 21 {
+  "id": 21,
+  "title": "Handmade Concrete Bacon",
+  "price": 633.29,
+  "description": "The sleek and reasonable Computer comes with cyan LED lighting for smart functionality",
+  "image": "https://picsum.photos/seed/SddYafU/1287/3267",
+  "category": "games"
+}

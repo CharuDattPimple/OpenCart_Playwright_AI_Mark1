@@ -1,0 +1,8 @@
+ New Product created using id 21 {
+  "id": 21,
+  "title": "Electronic Gold Hat",
+  "price": 536.5,
+  "description": "New Ball model with 9 GB RAM, 267 GB storage, and smart features",
+  "image": "https://picsum.photos/seed/6Tu3alqe/1941/617",
+  "category": "garden"
+}

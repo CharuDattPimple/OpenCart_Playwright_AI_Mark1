@@ -1,0 +1,8 @@
+ New Product created using id 21 {
+  "id": 21,
+  "title": "Refined Aluminum Table",
+  "price": 59.15,
+  "description": "New Chair model with 75 GB RAM, 306 GB storage, and grizzled features",
+  "image": "https://picsum.photos/seed/K8y7TA/1016/1885",
+  "category": "garden"
+}

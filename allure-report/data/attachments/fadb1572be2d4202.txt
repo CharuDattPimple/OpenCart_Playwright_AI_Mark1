@@ -1,0 +1,1 @@
+User Registration Test completed successfully for user: Opal Johns with email: Westley_Turcotte@gmail.com

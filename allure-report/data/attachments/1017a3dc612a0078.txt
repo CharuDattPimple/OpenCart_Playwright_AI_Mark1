@@ -1,0 +1,2 @@
+URL after Continue: http://localhost/opencart/upload/index.php?route=account/register&language=en-gb
+Page title: Register Account

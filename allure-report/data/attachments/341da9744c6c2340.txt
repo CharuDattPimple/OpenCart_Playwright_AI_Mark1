@@ -1,0 +1,8 @@
+ New Product created using id 21 {
+  "id": 21,
+  "title": "Practical Aluminum Bike",
+  "price": 411.49,
+  "description": "Professional-grade Pizza perfect for golden training and recreational use",
+  "image": "https://picsum.photos/seed/gWytQ9ur/3671/950",
+  "category": "electronics"
+}

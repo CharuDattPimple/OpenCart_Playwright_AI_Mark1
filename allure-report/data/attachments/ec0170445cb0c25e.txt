@@ -1,0 +1,8 @@
+Get Updated Product by ID ${createdProductId} :  {
+  "id": 21,
+  "title": "Updated Awesome Concrete Car",
+  "price": 219.59,
+  "description": "The Streamlined context-sensitive definition Pants offers reliable performance and different design",
+  "image": "https://picsum.photos/seed/BkgHp7vG/2320/2625",
+  "category": "baby"
+}

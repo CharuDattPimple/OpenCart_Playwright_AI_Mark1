@@ -16,7 +16,7 @@ for( const product of products){
 
    
 
-test(`Verify ${productName} can be successfully adeded to cart @master`, async ({homePage,loginPage,searchPage,productPage,shoppingCartPage}) => {
+test(`Verify ${productName} can be successfully adeded to cart @master @datadriven`, async ({homePage,loginPage,searchPage,productPage,shoppingCartPage}) => {
     
     await test.step('1) User opens the application',async ()=> {
         await homePage.navigateTo(process.env.WEB_APP_URL || 'http://localhost/opencart/upload/');

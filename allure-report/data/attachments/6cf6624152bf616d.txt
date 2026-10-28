@@ -1,0 +1,4 @@
+Error checkin success message : Error: locator.waitFor: Test ended.
+Call log:
+  - waiting for locator('.alert-success') to be visible
+

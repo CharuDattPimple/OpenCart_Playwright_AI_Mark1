@@ -1,0 +1,8 @@
+ New Product created using id 21 {
+  "id": 21,
+  "title": "Fantastic Silk Fish",
+  "price": 109.49,
+  "description": "Introducing the Tonga-inspired Bike, blending unique style with local craftsmanship",
+  "image": "https://picsum.photos/seed/UaqEojS/248/137",
+  "category": "toys"
+}

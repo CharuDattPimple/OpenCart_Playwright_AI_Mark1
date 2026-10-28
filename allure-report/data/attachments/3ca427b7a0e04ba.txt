@@ -1,0 +1,8 @@
+ New Product created using id 21 {
+  "id": 21,
+  "title": "Recycled Ceramic Cheese",
+  "price": 219.25,
+  "description": "Introducing the Denmark-inspired Shirt, blending shrill style with local craftsmanship",
+  "image": "https://picsum.photos/seed/Jrg3By/1594/1931",
+  "category": "books"
+}

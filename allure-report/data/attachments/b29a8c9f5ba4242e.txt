@@ -1,0 +1,8 @@
+Get Updated Product by ID ${createdProductId} :  {
+  "id": 21,
+  "title": "Updated Handcrafted Bronze Computer",
+  "price": 606.99,
+  "description": "Our delicious-inspired Gloves brings a taste of luxury to your wrathful lifestyle",
+  "image": "https://picsum.photos/seed/JfnmPYvVt/3744/793",
+  "category": "jewelry"
+}

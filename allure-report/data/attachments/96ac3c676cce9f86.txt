@@ -1,0 +1,8 @@
+ New Product created using id 21 {
+  "id": 21,
+  "title": "Luxurious Bamboo Bacon",
+  "price": 666.65,
+  "description": "Luxurious Chicken designed with Gold for lively performance",
+  "image": "https://picsum.photos/seed/OLcVCPBaB/3277/1174",
+  "category": "grocery"
+}

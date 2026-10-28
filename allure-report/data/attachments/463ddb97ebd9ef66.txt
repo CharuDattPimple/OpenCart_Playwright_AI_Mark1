@@ -1,0 +1,8 @@
+ New Product created using id 21 {
+  "id": 21,
+  "title": "Unbranded Metal Bacon",
+  "price": 272.5,
+  "description": "Discover the tiger-like agility of our Sausages, perfect for needy users",
+  "image": "https://picsum.photos/seed/I8epuK/3329/1088",
+  "category": "outdoors"
+}

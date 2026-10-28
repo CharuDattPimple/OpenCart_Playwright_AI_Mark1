@@ -1,0 +1,50 @@
+Error checking My Account Page : locator.waitFor: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator('#content h1').filter({ hasText: 'My Account' }) to be visible
+
+    at MyAccountPage.isMyaccountPageExists (D:\Learn\OpenCart_Playwright_AI\pages\myAccountPage.ts:22:37)
+    at D:\Learn\OpenCart_Playwright_AI\tests\web\e2e-shopping.spec.ts:53:60
+    at D:\Learn\OpenCart_Playwright_AI\tests\web\e2e-shopping.spec.ts:45:5 {
+  log: [
+    "  - waiting for locator('#content h1').filter({ hasText: 'My Account' }) to be visible"
+  ],
+  name: 'TimeoutError',
+  Symbol(step): {
+    stack: [ [Object], [Object], [Object] ],
+    category: 'pw:api',
+    title: 'Wait for selector',
+    subtitle: "locator('#content h1').filter({ hasText: 'My Account' })",
+    params: {
+      locator: "locator('#content h1').filter({ hasText: 'My Account' })",
+      state: 'visible'
+    },
+    group: undefined,
+    stepId: 'onuk@87',
+    boxedStack: undefined,
+    steps: [],
+    attachmentIndices: [],
+    info: TestStepInfoImpl {
+      annotations: [],
+      _testInfo: [TestInfoImpl],
+      _stepId: 'onuk@87',
+      _title: 'Wait for selector',
+      _parentStep: [TestStepInfoImpl],
+      skip: [Function (anonymous)]
+    },
+    complete: [Function: complete],
+    endWallTime: 1793189149149,
+    error: {
+      message: 'TimeoutError: locator.waitFor: Timeout 15000ms exceeded.\n' +
+        'Call log:\n' +
+        "\x1B[2m  - waiting for locator('#content h1').filter({ hasText: 'My Account' }) to be visible\x1B[22m\n",
+      stack: 'TimeoutError: locator.waitFor: Timeout 15000ms exceeded.\n' +
+        'Call log:\n' +
+        "\x1B[2m  - waiting for locator('#content h1').filter({ hasText: 'My Account' }) to be visible\x1B[22m\n" +
+        '\n' +
+        '    at MyAccountPage.isMyaccountPageExists (D:\\Learn\\OpenCart_Playwright_AI\\pages\\myAccountPage.ts:22:37)\n' +
+        '    at D:\\Learn\\OpenCart_Playwright_AI\\tests\\web\\e2e-shopping.spec.ts:53:60\n' +
+        '    at D:\\Learn\\OpenCart_Playwright_AI\\tests\\web\\e2e-shopping.spec.ts:45:5',
+      cause: undefined
+    }
+  }
+}

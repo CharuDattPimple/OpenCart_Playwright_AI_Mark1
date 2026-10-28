@@ -1,0 +1,8 @@
+Get Updated Product by ID ${createdProductId} :  {
+  "id": 21,
+  "title": "Updated Elegant Aluminum Pants",
+  "price": 484.09,
+  "description": "Discover the sociable new Computer with an exciting mix of Plastic ingredients",
+  "image": "https://picsum.photos/seed/UXXPw/2537/2681",
+  "category": "home"
+}

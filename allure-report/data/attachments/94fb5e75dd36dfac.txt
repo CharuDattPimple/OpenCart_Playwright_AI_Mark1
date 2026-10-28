@@ -1,0 +1,8 @@
+ New Product created using id 21 {
+  "id": 21,
+  "title": "Unbranded Cotton Fish",
+  "price": 586.9,
+  "description": "Ergonomic Sausages made with Silk for all-day big support",
+  "image": "https://picsum.photos/seed/m1BEVRS1I/853/2740",
+  "category": "books"
+}
