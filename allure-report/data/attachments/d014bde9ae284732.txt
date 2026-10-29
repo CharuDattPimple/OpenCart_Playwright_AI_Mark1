@@ -1,1 +1,0 @@
-User Registration Test completed successfully for user: Luciano Pacocha with email: Maximo35@gmail.com

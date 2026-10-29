@@ -1,1 +1,0 @@
-User Registration Test completed successfully for user: Van Dickens with email: Kristen.Nader@gmail.com

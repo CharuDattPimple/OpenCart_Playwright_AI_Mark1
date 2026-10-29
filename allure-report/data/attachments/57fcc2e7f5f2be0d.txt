@@ -1,8 +1,0 @@
- New Product created using id 21 {
-  "id": 21,
-  "title": "Incredible Bronze Table",
-  "price": 433.29,
-  "description": "Yundt, Hirthe and Lebsack's most advanced Towels technology increases excitable capabilities",
-  "image": "https://picsum.photos/seed/ae4dgLcFlx/2765/2195",
-  "category": "shoes"
-}

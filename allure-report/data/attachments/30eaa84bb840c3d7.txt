@@ -1,2 +1,0 @@
-username Demarco_Altenwerth and password APNhc0nv
-User authenticated successfully using username Demarco_Altenwerth and password APNhc0nv and got token as eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsInVzZXIiOiJtb3JfMjMxNCIsImlhdCI6MTc5MzA4NjI2Mn0.ANSj9e0x_4mywYKBag1FGqISdCTS3P80200OKfz1UcI

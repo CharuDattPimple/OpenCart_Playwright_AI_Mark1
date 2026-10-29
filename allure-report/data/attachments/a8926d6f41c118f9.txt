@@ -1,7 +1,0 @@
-Error checking search page item visibility: Error: locator.isVisible: Error: strict mode violation: getByRole('link', { name: 'MacBook', exact: true }) resolved to 2 elements:
-    1) <a href="http://localhost/opencart/upload/index.php?route=product/product&language=en-gb&product_id=43&search=MacBook">…</a> aka getByRole('link', { name: 'MacBook' }).first()
-    2) <a href="http://localhost/opencart/upload/index.php?route=product/product&language=en-gb&product_id=43&search=MacBook">MacBook</a> aka getByText('MacBook', { exact: true })
-
-Call log:
-    - checking visibility of getByRole('link', { name: 'MacBook', exact: true })
-

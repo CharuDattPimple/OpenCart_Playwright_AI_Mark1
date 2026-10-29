@@ -1,8 +1,0 @@
-Get Updated Product by ID ${createdProductId} :  {
-  "id": 21,
-  "title": "Updated Handcrafted Steel Computer",
-  "price": 241.79,
-  "description": "Introducing the Mayotte-inspired Bacon, blending queasy style with local craftsmanship",
-  "image": "https://picsum.photos/seed/a7gCjFXUu/1496/2598",
-  "category": "shoes"
-}

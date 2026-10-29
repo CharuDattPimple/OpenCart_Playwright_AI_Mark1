@@ -16,7 +16,7 @@ node_module
 #Reports
 /reports/
 /allure-results/
-/allure-reports/
+/allure-report/
 /custom-report/
 
 #  Tool / IDE config (local caches, not project files) 

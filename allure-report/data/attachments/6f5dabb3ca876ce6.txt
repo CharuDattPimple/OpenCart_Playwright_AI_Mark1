@@ -1,8 +1,0 @@
- New Product created using id 21 {
-  "id": 21,
-  "title": "Frozen Rubber Chicken",
-  "price": 263.73,
-  "description": "Ergonomic Mouse made with Wooden for all-day productive support",
-  "image": "https://picsum.photos/seed/9xGOYL/1080/1721",
-  "category": "electronics"
-}

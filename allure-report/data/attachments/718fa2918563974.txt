@@ -1,8 +1,0 @@
-Get Updated Product by ID ${createdProductId} :  {
-  "id": 21,
-  "title": "Updated Sleek Ceramic Bike",
-  "price": 662.35,
-  "description": "Discover the sneaky new Gloves with an exciting mix of Cotton ingredients",
-  "image": "https://picsum.photos/seed/y25eejKjb4/2780/648",
-  "category": "home"
-}

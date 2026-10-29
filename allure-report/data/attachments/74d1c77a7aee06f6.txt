@@ -1,8 +1,0 @@
- New Product created using id 21 {
-  "id": 21,
-  "title": "Oriental Wooden Gloves",
-  "price": 659.15,
-  "description": "Ergonomic Pants made with Steel for all-day vast support",
-  "image": "https://picsum.photos/seed/g2Q7HqbTcI/2424/1525",
-  "category": "sports"
-}

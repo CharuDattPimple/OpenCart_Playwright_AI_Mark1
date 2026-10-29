@@ -1,8 +1,0 @@
- New Product created using id 21 {
-  "id": 21,
-  "title": "Small Bronze Table",
-  "price": 499.75,
-  "description": "New Ball model with 54 GB RAM, 929 GB storage, and tattered features",
-  "image": "https://picsum.photos/seed/so9y7lypaL/3126/744",
-  "category": "movies"
-}

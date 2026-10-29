@@ -1,6 +1,0 @@
-Error checkin success message : Error: locator.waitFor: Test ended.
-Call log:
-  - waiting for locator('.alert-success') to be visible
-    - waiting for navigation to finish...
-    - navigated to "http://localhost/opencart/upload/index.php?route=product/product&language=en-gb&product_id=40&search=iphone"
-

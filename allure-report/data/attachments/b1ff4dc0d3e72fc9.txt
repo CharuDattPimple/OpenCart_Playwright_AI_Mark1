@@ -1,8 +1,0 @@
- New Product created using id 21 {
-  "id": 21,
-  "title": "Generic Marble Bike",
-  "price": 135.05,
-  "description": "New azure Computer with ergonomic design for experienced comfort",
-  "image": "https://picsum.photos/seed/R5mpOtB/2066/805",
-  "category": "kids"
-}
