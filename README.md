@@ -134,47 +134,10 @@ flowchart TD
 ---
 
 ## 📁 Project Structure
+<img width="437" height="862" alt="S1" src="https://github.com/user-attachments/assets/569ea62e-9da0-4c4f-9182-88e586f3bf7e" />
+<img width="451" height="215" alt="s2" src="https://github.com/user-attachments/assets/9ad2edde-e443-4a00-9804-fddf4b9860dd" />
 
-```mermaid
-graph TD
-    ROOT["📦 playwright-opencart-ai/"] --> CONF["⚙️ Config Files"]
-    ROOT --> SRC["📂 Source Code"]
-    ROOT --> TEST["🧪 Tests"]
-    ROOT --> DATA["📁 Test Data"]
-    ROOT --> REPORTS["📊 Reports"]
-    ROOT --> INFRA["🐳 Infrastructure"]
 
-    CONF --> PC["playwright.config.ts"]
-    CONF --> TS["tsconfig.json"]
-    CONF --> PKG["package.json"]
-    CONF --> ENV[".env.example"]
-    CONF --> DI[".dockerignore"]
-    CONF --> GI[".gitignore"]
-
-    SRC --> PAGES["pages/<br/>12 Page Objects"]
-    SRC --> UTILS["utils/<br/>5 Utilities"]
-    SRC --> FIXTURES["fixtures/<br/>pageFixtures.ts"]
-    SRC --> API["api/<br/>endpoints + schemas"]
-
-    TEST --> WEB["tests/web/<br/>8 UI test specs"]
-    TEST --> API_T["tests/api/<br/>8 API test specs"]
-    TEST --> DB_T["tests/db/<br/>1 E2E DB spec"]
-
-    DATA --> CSV["*.csv"]
-    DATA --> JSON["*.json"]
-    DATA --> XLSX["*.xlsx"]
-
-    REPORTS --> HTML["reports/"]
-    REPORTS --> ALLURE["allure-results/"]
-    REPORTS --> CUSTOM["custom-report/"]
-    REPORTS --> TR["test-results/"]
-
-    INFRA --> DOCKER["Dockerfile"]
-    INFRA --> DC["docker-compose.yml"]
-    INFRA --> ENTRY["docker-entrypoint.sh"]
-    INFRA --> JENKINS["Jenkinsfile"]
-    INFRA --> SETUP["env_setup.bat"]
-```
 
 ### 📂 Folder Breakdown
 
