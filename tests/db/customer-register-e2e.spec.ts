@@ -2,14 +2,14 @@ import { test, expect } from '../../fixtures/pageFixtures';
 import { DataGenerator } from '../../utils/dataGenerator';
 import { executeQuery } from '../../utils/dbClient';
 
-test.describe.serial('Opencart - Customer Registration using UI + Admin + DB Validation @master', () => {
+test.describe.serial('Opencart - Customer Registration using UI + Admin + DB Validation @uidb', () => {
     const firstName: string = DataGenerator.getFirstName();
     const lastName: string = DataGenerator.getLastName();
     const email: string = DataGenerator.getEmail();
     const password: any = DataGenerator.getPassword();
     const telephone: any = DataGenerator.getPhoneNumber();
 
-    test('Register a customer with random data using UI @master', async ({ registerPage, homePage, sucessPage, myAccountPage }) => {
+    test('Register a customer with random data using UI @uidb', async ({ registerPage, homePage, sucessPage, myAccountPage }) => {
 
 
         await test.step('1) User Opens the application', async () => {
@@ -19,19 +19,12 @@ test.describe.serial('Opencart - Customer Registration using UI + Admin + DB Val
         await test.step('2) Register a new customer using dynamically generated unique data.', async () => {
             await homePage.clickMyAccount();
             await homePage.clickRegister();
-
-            // const isRegisterPage : boolean  = await registerPage.isRegisterPageExists();
-            // expect(isRegisterPage).toBeTruthy();
-
             await registerPage.completeRegistration(firstName, lastName, email, telephone,password);
         })
 
         await test.step('3) Verify that the user is registered successfully', async () => {
             const isSuccess: boolean = await sucessPage.isSucccessPageExists();
             expect(isSuccess).toBeTruthy();
-
-            // const successMessage : string | null = await sucessPage.getSuccessMessage();
-            // expect(successMessage).toContain('Your Account Has Been Created!');
 
             await sucessPage.clickContinueButton();
             const isMyAccount: boolean = await myAccountPage.isMyaccountPageExists();
@@ -40,7 +33,7 @@ test.describe.serial('Opencart - Customer Registration using UI + Admin + DB Val
 
     })
 
-    test('Verify the register customer is in Opencart Admin portal @master', async ({ homePage, adminLoginPage, adminHomePage, customersPage }) => {
+    test('Verify the register customer is in Opencart Admin portal @uidb', async ({ homePage, adminLoginPage, adminHomePage, customersPage }) => {
         const adminEmail: any = process.env.ADMIN_USERNAME;
         const adminPassword: any = process.env.ADMIN_PASSWORD;
 
@@ -73,7 +66,7 @@ test.describe.serial('Opencart - Customer Registration using UI + Admin + DB Val
 
     })
 
-    test('Verify the customer record in the MySQL oc_customer table @master', async ({ }) => {
+    test('Verify the customer record in the MySQL oc_customer table @uidb', async ({ }) => {
 
         const rows: any[] = (await executeQuery(
             'SELECT customer_id, firstname, lastname, email, status, date_added FROM oc_customer WHERE email = ?', [email])) as any[];

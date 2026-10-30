@@ -5,7 +5,7 @@ import {Routes} from '../../api/endpoints/routes';
 
 dotenv.config();
 
-test.describe.serial('Products API test with CRUD workflow', () =>{
+test.describe.serial('Products API test with CRUD workflow @master @api', () =>{
     const BASE_URL =  process.env.API_BASE_URL || Routes.BASE_URL;
     let createdProductId : number;
     const PRODUCT_ID = Number(process.env.PRODUCT_ID ?? 1);
