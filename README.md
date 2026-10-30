@@ -139,8 +139,7 @@ flowchart TD
     <td>
       <img src="https://github.com/user-attachments/assets/569ea62e-9da0-4c4f-9182-88e586f3bf7e" width="437" />
       <br/>
-      <img width="362" height="171" alt="image" src="https://github.com/user-attachments/assets/1486770f-bc6d-40a1-b62d-87c3f5d24d06" />
-
+      <img width="332" height="180" alt="image" src="https://github.com/user-attachments/assets/5df9b11c-3582-4038-b2d2-791dc08e228f" />
     </td>
   </tr>
 </table>
