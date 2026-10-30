@@ -134,8 +134,16 @@ flowchart TD
 ---
 
 ## 📁 Project Structure
-<img width="437" height="862" alt="S1" src="https://github.com/user-attachments/assets/569ea62e-9da0-4c4f-9182-88e586f3bf7e" />
-<img width="451" height="215" alt="s2" src="https://github.com/user-attachments/assets/9ad2edde-e443-4a00-9804-fddf4b9860dd" />
+<table>
+  <tr>
+    <td>
+      <img src="https://github.com/user-attachments/assets/569ea62e-9da0-4c4f-9182-88e586f3bf7e" width="437" />
+      <br/>
+      <img width="362" height="171" alt="image" src="https://github.com/user-attachments/assets/1486770f-bc6d-40a1-b62d-87c3f5d24d06" />
+
+    </td>
+  </tr>
+</table>
 
 
 
