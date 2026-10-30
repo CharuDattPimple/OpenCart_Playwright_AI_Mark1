@@ -11,29 +11,52 @@
 
 ---
 
+
 ## 📖 Table of Contents
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [Framework Architecture](#-framework-architecture)
-- [Project Structure](#-project-structure)
-- [Tech Stack](#-tech-stack)
-- [Prerequisites](#-prerequisites)
-- [Quick Start](#-quick-start)
-- [Environment Configuration](#-environment-configuration)
-- [Test Suites & Tags](#-test-suites--tags)
-- [Running Tests](#-running-tests)
-- [Test Execution Flow](#-test-execution-flow)
-- [Page Object Model](#-page-object-model)
-- [API Testing](#-api-testing)
-- [Database Testing](#-database-testing)
-- [Data-Driven Testing](#-data-driven-testing)
-- [Reporting](#-reporting)
-- [Docker Setup](#-docker-setup)
-- [CI/CD with Jenkins](#-cicd-with-jenkins)
-- [Utilities](#-utilities)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [🎭 Playwright + TypeScript Automation Framework](#-playwright--typescript-automation-framework)
+  - [📖 Table of Contents](#-table-of-contents)
+  - [🎯 Overview](#-overview)
+  - [✨ Key Features](#-key-features)
+  - [🏗️ Framework Architecture](#️-framework-architecture)
+  - [📁 Project Structure](#-project-structure)
+    - [📂 Folder Breakdown](#-folder-breakdown)
+  - [🛠️ Tech Stack](#️-tech-stack)
+  - [📋 Prerequisites](#-prerequisites)
+  - [🚀 Quick Start](#-quick-start)
+    - [1️⃣ Clone the Repository](#1️⃣-clone-the-repository)
+    - [2️⃣ Install Dependencies](#2️⃣-install-dependencies)
+    - [3️⃣ Install Playwright Browsers](#3️⃣-install-playwright-browsers)
+    - [4️⃣ Configure Environment](#4️⃣-configure-environment)
+    - [5️⃣ Run All Tests](#5️⃣-run-all-tests)
+  - [🔧 Environment Configuration](#-environment-configuration)
+  - [🏷️ Test Suites \& Tags](#️-test-suites--tags)
+  - [▶️ Running Tests](#️-running-tests)
+    - [Run All Tests](#run-all-tests)
+    - [Run by Tag (npm scripts)](#run-by-tag-npm-scripts)
+    - [Run in Headed Mode (with browser visible)](#run-in-headed-mode-with-browser-visible)
+    - [Run with Debugging](#run-with-debugging)
+    - [Run a Single Test File](#run-a-single-test-file)
+    - [Run with Specific Project / Browser](#run-with-specific-project--browser)
+    - [Run with grep (custom tag filter)](#run-with-grep-custom-tag-filter)
+    - [Run in CI Mode (headless, 2 retries, 1 worker)](#run-in-ci-mode-headless-2-retries-1-worker)
+  - [🔄 Test Execution Flow](#-test-execution-flow)
+  - [📊 Reporting](#-reporting)
+  - [🐳 Docker Setup](#-docker-setup)
+    - [Docker Architecture](#docker-architecture)
+    - [Build the Image](#build-the-image)
+    - [Run Test Suites](#run-test-suites)
+    - [Pass Extra Playwright Arguments](#pass-extra-playwright-arguments)
+    - [Key Docker Features](#key-docker-features)
+  - [🚇 CI/CD with Jenkins](#-cicd-with-jenkins)
+    - [Pipeline Stages](#pipeline-stages)
+    - [Pipeline Parameters](#pipeline-parameters)
+    - [Post-Build Actions](#post-build-actions)
+  - [🔧 Utilities](#-utilities)
+  - [📋 Coding Guidelines](#-coding-guidelines)
+  - [CI - Git Hub Copilot](#ci---git-hub-copilot)
+  - [CI using Jenkins Pipeline](#ci-using-jenkins-pipeline)
+  - [👨‍🏫 Author](#-author)
 
 ---
 
@@ -71,74 +94,41 @@ It is designed for **CI/CD integration** (Jenkins + Docker), supports **multiple
 ## 🏗️ Framework Architecture
 
 ```mermaid
-flowchart TB
-    subgraph Config["⚙️ Configuration Layer"]
-        direction LR
-        PC["playwright.config.ts<br/>Timeouts, reporters,<br/>browsers, retries"]
-        ENV[".env<br/>URLs, credentials,<br/>API keys"]
-        TS["tsconfig.json<br/>TypeScript compiler<br/>options"]
+flowchart TD
+    RUN["Developer / CI"] --> EXEC["npm scripts or Docker Compose"]
+    EXEC --> RUNNER["Playwright Test Runner"]
+    DOCKER["Docker image + entrypoint"] -. optional .-> EXEC
+
+    CONFIG["playwright.config.ts<br/>Chromium, tags, retries, artifacts"] --> RUNNER
+    ENV[".env<br/>Application, API, admin, and DB settings"] --> TESTS
+
+    RUNNER --> TESTS
+    subgraph TESTS["Test suites"]
+        WEB["tests/web<br/>UI tests"]
+        API["tests/api<br/>REST API tests"]
+        DBTEST["tests/db<br/>UI + database tests"]
     end
 
-    subgraph Tests["🧪 Test Layer"]
-        direction TB
-        WEB["tests/web/<br/>UI Tests<br/>@web"]
-        API["tests/api/<br/>API Tests<br/>@api"]
-        DB["tests/db/<br/>DB Tests<br/>@db"]
-    end
+    WEB --> FIXTURES["fixtures/pageFixtures.ts"]
+    DBTEST --> FIXTURES
+    FIXTURES --> PAGES["pages/<br/>Page Objects"]
+    PAGES --> STORE["OpenCart storefront and admin"]
 
-    subgraph POM["📄 Page Object Layer"]
-        HP["HomePage"]
-        LP["LoginPage"]
-        RP["RegisterPage"]
-        CP["CartPage"]
-        PP["ProductPage"]
-        SP["SearchResultsPage"]
-        AP["AdminLoginPage"]
-        ACP["AdminCustomersPage"]
-        ACEP["AdminCustomerEditPage"]
-    end
+    API --> ROUTES["api/endpoints/routes.ts"]
+    API --> APITARGET["API target"]
 
-    subgraph Utils["🔧 Utility Layer"]
-        DG["dataGenerator.ts<br/>Faker.js random data"]
-        DR["DataReader.ts<br/>CSV / JSON / Excel"]
-        HLP["helper.ts<br/>Price conversion,<br/>test data helpers"]
-        DB["dbClient.ts<br/>MySQL queries"]
-        CR["CustomReporter.ts<br/>Custom HTML dashboard"]
-    end
+    WEB --> SHARED["Shared utilities"]
+    API --> SHARED
+    DBTEST --> SHARED
+    SHARED --> GENERATOR["dataGenerator.ts<br/>Faker.js"]
+    SHARED --> READER["DataReader.ts<br/>CSV / JSON / Excel"]
+    SHARED --> DBCLIENT["dbClient.ts<br/>MySQL"]
+    READER --> DATA["testdata/"]
+    DBTEST --> DBCLIENT
+    DBCLIENT --> MYSQL["MySQL database"]
 
-    subgraph API_Layer["🌐 API Layer"]
-        ROUTES["endpoints/routes.ts<br/>All endpoint URLs"]
-        SCHEMAS["schemas/<br/>JSON Schemas for<br/>response validation"]
-    end
-
-    subgraph Data["📁 Test Data"]
-        CSV["opencart_logindata.csv"]
-        JSON["opencart_logindata.json"]
-        XLSX["opencart_logindata.xlsx"]
-    end
-
-    subgraph Reports["📊 Reporting Layer"]
-        HTML["HTML Report<br/>(reports/)"]
-        ALLURE["Allure Report<br/>(allure-results/)"]
-        JUNIT["JUnit XML<br/>(reports/)"]
-        CUSTOM["Custom Dashboard<br/>(custom-report/)"]
-    end
-
-    subgraph CI_CD["🚀 CI/CD Layer"]
-        DOCKER["Docker /<br/>Docker Compose"]
-        JENKINS["Jenkins Pipeline"]
-    end
-
-    Tests --> POM
-    Tests --> API_Layer
-    Tests --> Utils
-    Tests --> Data
-    POM --> Fixtures["fixtures/pageFixtures.ts"]
-    Fixtures --> Tests
-    Tests --> Config
-    Tests --> Reports
-    CI_CD --> Config
-    CI_CD --> Tests
+    RUNNER --> REPORTS["HTML / JUnit / Allure / custom reports"]
+    RUNNER --> ARTIFACTS["Screenshots / videos / traces on failure"]
 ```
 
 ---
@@ -570,4 +560,3 @@ flowchart LR
 </div>
 
 ---
-
