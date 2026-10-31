@@ -6,6 +6,7 @@ export class ProductPage {
     private readonly inputQuantity: Locator;
     private readonly addToCartButton: Locator;
     private readonly successMessage: Locator;
+    private readonly availability: Locator;
 
 
     constructor(page: Page) {
@@ -13,6 +14,7 @@ export class ProductPage {
         this.inputQuantity = page.locator('#input-quantity');
         this.addToCartButton = page.getByRole('button', { name: 'Add to Cart' });
         this.successMessage = page.locator('.alert-success');
+        this.availability = page.locator('#content li').filter({ hasText: /^Availability:/ });
     }
 
     async enterQuantity(quantity: string): Promise<void> {
@@ -25,6 +27,10 @@ export class ProductPage {
     async getEnterQuantitiy(){
         const actualQuantity = await this.inputQuantity.inputValue();
         return await actualQuantity;
+    }
+
+    async getAvailabilityText(): Promise<string> {
+        return await this.availability.innerText();
     }
 
     async clickAddToCart(): Promise<void> {

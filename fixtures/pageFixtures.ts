@@ -36,9 +36,11 @@ type PageFixture = {
 
 // Export the extended test with custom fixtures
 export const test = base.extend<PageFixture>({
+    // Defines the custom fixture named `homePage`.
     homePage: async ({ page }, use) => {
-        // page.goto(APP_URL); 
+    // Creates a HomePage page-object instance using Playwright's `page`.
         const homePage = new HomePage(page);
+    // Supplies that instance to the test. Playwright waits here while the test uses it.
         await use(homePage);
     },
     registerPage: async ({ page }, use) => {
