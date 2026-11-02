@@ -22,7 +22,7 @@ services:
       - ./custom-report:/app/custom-report
       - ./test-results:/app/test-results
     # Default suite — override via command-line argument
-    #   docker compose run --rm playwright-tests api
+      # docker compose run --rm playwright-tests e2e
     command: [ "all" ]
     stdin_open: true
     tty: true
