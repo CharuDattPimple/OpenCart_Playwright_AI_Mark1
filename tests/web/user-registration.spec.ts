@@ -1,5 +1,7 @@
 import {test, expect} from '../../fixtures/pageFixtures';
 import { DataGenerator } from '../../utils/dataGenerator';
+import { getRequiredUrl } from '../../utils/environment';
+
 
 test('User registration test @master',async ({registerPage,homePage,sucessPage,myAccountPage})=>{
     const firstName : string = DataGenerator.getFirstName();
@@ -9,7 +11,8 @@ test('User registration test @master',async ({registerPage,homePage,sucessPage,m
     const telephone = DataGenerator.getPhoneNumber();
     
     await test.step('1) User Opens the application', async () => {
-        await homePage.navigateTo(process.env.WEB_APP_URL || 'http://localhost/opencart/upload/');
+        // await homePage.navigateTo(process.env.WEB_APP_URL || 'http://localhost/opencart/upload/');
+        await homePage.navigateTo(getRequiredUrl('WEB_APP_URL'));
     });
 
     await test.step('2) User navigates to my Account -> Register page', async () => {

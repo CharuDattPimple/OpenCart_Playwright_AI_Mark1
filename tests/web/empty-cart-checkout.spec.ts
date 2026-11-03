@@ -1,10 +1,13 @@
 //Created using Prompts
 import { test, expect } from '../../fixtures/pageFixtures';
+import {  getRequiredUrl } from '../../utils/environment';
+
 
 test('Verify empty cart prevents checkout progression @master @web', async ({ page, homePage, shoppingCartPage }) => {
     const appUrl = new URL(
-        process.env.WEB_APP_URL || 'https://awesomeqa.com/ui/'
-    );
+        // process.env.WEB_APP_URL || 'https://awesomeqa.com/ui/'
+        getRequiredUrl('WEB_APP_URL')
+        );
 
     await test.step('1) User opens the application and verifies the shopping cart is empty', async () => {
         await homePage.navigateTo(appUrl.toString());

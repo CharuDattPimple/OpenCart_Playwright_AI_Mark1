@@ -4,25 +4,29 @@ services:
       context: .
       dockerfile: Dockerfile
     image: playwright-opencart
-    container_name: playwright-opencart-tests
     working_dir: /app
-    env_file:
-      - .env
     environment:
       CI: "1"
+      APP_ENV: ${APP_ENV:?Set APP_ENV}
+      WEB_APP_URL: ${WEB_APP_URL:?Set WEB_APP_URL}
+      API_BASE_URL: ${API_BASE_URL:?Set API_BASE_URL}
+      ADMIN_APP_URL: ${ADMIN_APP_URL:-}
+      APP_EMAIL: ${APP_EMAIL:-}
+      APP_PASSWORD: ${APP_PASSWORD:-}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      API_USERNAME: ${API_USERNAME:-}
+      API_PASSWORD: ${API_PASSWORD:-}
+      DB_HOST: ${DB_HOST:-}
+      DB_PORT: ${DB_PORT:-}
+      DB_USER: ${DB_USER:-}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      DB_NAME: ${DB_NAME:-}
     volumes:
-      # Mount the project root so code changes are reflected without rebuilds
-      - .:/app
-      # Preserve the container's node_modules (bind mount would shadow it)
       - /app/node_modules
-      # Persist reports and artifacts on the host
       - ./reports:/app/reports
       - ./allure-results:/app/allure-results
       - ./allure-report:/app/allure-report
       - ./custom-report:/app/custom-report
       - ./test-results:/app/test-results
-    # Default suite — override via command-line argument
-      # docker compose run --rm playwright-tests e2e
-    command: [ "all" ]
-    stdin_open: true
-    tty: true
+    command: ["all"]

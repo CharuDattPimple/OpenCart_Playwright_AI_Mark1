@@ -1,6 +1,8 @@
 import { test, expect } from '../../fixtures/pageFixtures';
 import { DataGenerator } from '../../utils/dataGenerator';
 import { executeQuery } from '../../utils/dbClient';
+import { getRequiredUrl } from '../../utils/environment';
+
 
 test.describe.serial('Opencart - Customer Registration using UI + Admin + DB Validation @uidb', () => {
     const firstName: string = DataGenerator.getFirstName();
@@ -13,7 +15,9 @@ test.describe.serial('Opencart - Customer Registration using UI + Admin + DB Val
 
 
         await test.step('1) User Opens the application', async () => {
-            await homePage.navigateTo(process.env.APP_URL || 'http://localhost/opencart/upload/');
+             await homePage.navigateTo(getRequiredUrl('WEB_APP_URL'));
+        
+            // await homePage.navigateTo(process.env.APP_URL || 'http://localhost/opencart/upload/');
         });
 
         await test.step('2) Register a new customer using dynamically generated unique data.', async () => {
@@ -38,8 +42,8 @@ test.describe.serial('Opencart - Customer Registration using UI + Admin + DB Val
         const adminPassword: any = process.env.ADMIN_PASSWORD;
 
         await test.step('1) Open the OpenCart Admin Portal', async () => {
-            await homePage.navigateTo(process.env.ADMIN_APP_URL || 'http://localhost/opencart/upload/admin/');
-
+            // await homePage.navigateTo(process.env.ADMIN_APP_URL || 'http://localhost/opencart/upload/admin/');
+            await homePage.navigateTo(getRequiredUrl('ADMIN_APP_URL'));
         })
         await test.step('2) Log in using configured administrator credentials', async () => {
             await adminLoginPage.adminLogin(adminEmail, adminPassword);

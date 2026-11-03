@@ -14,9 +14,9 @@ import { AdminHomePage } from '../pages/adminHomePage';
 import { CustomersPage} from '../pages/customersPage';
 
 // Load environment variables from .env file
-dotenv.config();
+// dotenv.config();
 
-const APP_URL = process.env.APP_URL || 'http://localhost/opencart/upload/';
+// const APP_URL = process.env.APP_URL || 'http://localhost/opencart/upload/';
 
 // Define the PageFixture type that extends Playwright's test with custom fixtures
 type PageFixture = {

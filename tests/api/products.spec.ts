@@ -3,10 +3,14 @@ import { DataGenerator } from '../../utils/dataGenerator';
 import dotenv from 'dotenv';
 import {Routes} from '../../api/endpoints/routes';
 
-dotenv.config();
+// dotenv.config();
+import { getRequiredUrl, getRequiredEnv } from '../../utils/environment';
+
+
 
 test.describe.serial('Products API test with CRUD workflow @master @api', () =>{
-    const BASE_URL =  process.env.API_BASE_URL || Routes.BASE_URL;
+    // const BASE_URL =  process.env.API_BASE_URL || Routes.BASE_URL;
+    const BASE_URL = getRequiredUrl('API_BASE_URL').replace(/\/+$/, '');
     let createdProductId : number;
     const PRODUCT_ID = Number(process.env.PRODUCT_ID ?? 1);
 

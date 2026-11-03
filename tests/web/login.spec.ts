@@ -1,12 +1,20 @@
 import {test,expect} from '../../fixtures/pageFixtures';
 
+import { getRequiredEnv, getRequiredUrl } from '../../utils/environment';
+
+// ...
+const email = getRequiredEnv('APP_EMAIL');
+const password = getRequiredEnv('APP_PASSWORD');
+
+
 
 test('Login Test with valid credentials @master',async ({homePage, loginPage,myAccountPage})=>{
-    const email : any  = process.env.APP_EMAIL;
-    const password: any = process.env.APP_PASSWORD;
+    // const email : any  = process.env.APP_EMAIL;
+    // const password: any = process.env.APP_PASSWORD;
 
     await test.step('1) User opens the application',async ()=> {
-        await homePage.navigateTo(process.env.WEB_APP_URL || 'http://localhost/opencart/upload/');
+        await homePage.navigateTo(getRequiredUrl('WEB_APP_URL'));
+        // await homePage.navigateTo(process.env.WEB_APP_URL || 'http://localhost/opencart/upload/');
     })
     await test.step('2) Navigates to My Account -> Login Page',async ()=> {
         await homePage.clickMyAccount();

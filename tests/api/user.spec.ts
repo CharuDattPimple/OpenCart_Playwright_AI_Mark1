@@ -3,10 +3,14 @@ import { DataGenerator } from '../../utils/dataGenerator';
 import dotenv from 'dotenv';
 import {Routes} from '../../api/endpoints/routes';
 
-dotenv.config({override : true});
+// dotenv.config({override : true});
+import { getRequiredUrl, getRequiredEnv } from '../../utils/environment';
+
 
 test.describe('Users API Test',() =>{
-const BASE_URL = process.env.API_BASE_URL || Routes.BASE_URL;
+// const BASE_URL = process.env.API_BASE_URL || Routes.BASE_URL;
+const BASE_URL = getRequiredUrl('API_BASE_URL').replace(/\/+$/, '');
+
 
         //create new user
 test('POST - Create a user @master @api',async({request}) => {

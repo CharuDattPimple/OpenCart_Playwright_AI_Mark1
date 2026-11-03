@@ -1,5 +1,6 @@
 // Imports Playwright's configuration helper and built-in browser device profiles.
 import { defineConfig, devices } from "@playwright/test";
+import { getRequiredUrl } from './utils/environment';
 
 // Exports the configuration used by the Playwright test runner.
 export default defineConfig({
@@ -34,6 +35,7 @@ export default defineConfig({
   ],
   // Sets browser and context options shared by tests.
   use: {
+     baseURL: getRequiredUrl('WEB_APP_URL'),
     // Saves a trace when a test fails, for troubleshooting.
     trace: "retain-on-failure",
     // Saves a screenshot only when a test fails.
@@ -41,7 +43,8 @@ export default defineConfig({
     // Saves a video only when a test fails.
     video: "retain-on-failure",
     // Runs browsers without a visible UI, suitable for CI and Docker.
-    headless: true,
+    // headless: false,
+    headless: Boolean(process.env.CI),
     // Sets a consistent browser viewport size.
     viewport: { width: 1280, height: 720 }, // Set default viewport size for consistency
     // Allows navigation to sites with invalid or self-signed HTTPS certificates.

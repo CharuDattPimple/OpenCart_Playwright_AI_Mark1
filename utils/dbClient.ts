@@ -1,18 +1,19 @@
 import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
+import { getRequiredEnv } from './environment';
 
-dotenv.config();
-
-export async function executeQuery(sql: string, params?: any[]) {
+export async function executeQuery(sql: string, params?: unknown[]) {
     const connection = await mysql.createConnection({
-        host : process.env.DB_HOST,
-        port : process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
-        user : process.env.DB_USER,
-        password : process.env.DB_PASSWORD,
-        database : process.env.DB_NAME
+        host: getRequiredEnv('DB_HOST'),
+        port: Number(getRequiredEnv('DB_PORT')),
+        user: getRequiredEnv('DB_USER'),
+        password: getRequiredEnv('DB_PASSWORD'),
+        database: getRequiredEnv('DB_NAME'),
     });
 
-    const [result] = await connection.execute(sql, params);
-    await connection.end();
-    return result;
+    try {
+        const [result] = await connection.execute(sql, params);
+        return result;
+    } finally {
+        await connection.end();
+    }
 }

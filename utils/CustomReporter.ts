@@ -141,7 +141,7 @@ class CustomReporter implements Reporter {
         console.log('╠════════════════════════════════════════════════════════════════╣');
         console.log(`║  📅 Started: ${this.startTime.toLocaleString().padEnd(47)}║`);
         console.log(`║  📊 Total Tests: ${String(totalTests).padEnd(44)}║`);
-        console.log(`║  🌐 Environment: ${(process.env.TEST_ENV || 'QA').padEnd(44)}║`);
+        console.log(`║  🌐 Environment: ${(process.env.APP_ENV || 'unknown').padEnd(44)}║`);
         console.log('╚════════════════════════════════════════════════════════════════╝\n');
 
         this.initializeLiveReport();

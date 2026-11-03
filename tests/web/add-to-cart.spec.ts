@@ -1,6 +1,7 @@
 import { test, expect } from '../../fixtures/pageFixtures';
 import path from 'path';
 import { DataProvider } from '../../utils/DataReader';
+import {  getRequiredUrl } from '../../utils/environment';
 
 
 const execelPath = path.resolve(
@@ -19,7 +20,9 @@ for (const product of products) {
     test(`Verify ${productName} can be successfully adeded to cart @master @datadriven`, async ({ homePage, loginPage, searchPage, productPage, shoppingCartPage }) => {
 
         await test.step('1) User opens the application', async () => {
-            await homePage.navigateTo(process.env.WEB_APP_URL || 'http://localhost/opencart/upload/');
+           await homePage.navigateTo(getRequiredUrl('WEB_APP_URL'));
+       
+            // await homePage.navigateTo(process.env.WEB_APP_URL || 'http://localhost/opencart/upload/');
         })
 
         await test.step(`2) User searches a valid product ${productName}`, async () => {

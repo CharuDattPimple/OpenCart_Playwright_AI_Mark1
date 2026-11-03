@@ -2,6 +2,8 @@
 import { test, expect } from '../../fixtures/pageFixtures';
 import path from 'path';
 import { DataProvider } from '../../utils/DataReader';
+import { getRequiredUrl } from '../../utils/environment';
+
 
 const excelPath = path.resolve(
     process.cwd(),
@@ -23,7 +25,9 @@ for (const product of products) {
         shoppingCartPage,
     }) => {
         const appUrl = new URL(
-            process.env.WEB_APP_URL || 'https://awesomeqa.com/ui/'
+            // process.env.WEB_APP_URL || 'https://awesomeqa.com/ui/'
+         getRequiredUrl('WEB_APP_URL')
+        
         );
 
         await test.step('1) User opens the application and verifies the shopping cart is empty', async () => {

@@ -1,7 +1,7 @@
 
 export const Routes = {
 
-    BASE_URL: 'https://fakestoreapi.com',
+    // BASE_URL: 'https://fakestoreapi.com',
 
     // =========================
     // Product Routes

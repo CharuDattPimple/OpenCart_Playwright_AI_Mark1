@@ -12,6 +12,8 @@ node_module
 
 #Enviornments & secrets
 .env
+.env.*
+!config/environments/.env.example
 
 #Reports
 /reports/

@@ -2,6 +2,8 @@ import { test, expect } from '../../fixtures/pageFixtures'
 import { DataGenerator } from '../../utils/dataGenerator'
 import path from 'path';
 import { DataProvider } from '../../utils/DataReader';
+import { getRequiredUrl } from '../../utils/environment';
+
 
 const execelPath = path.resolve(
     process.cwd(),
@@ -29,7 +31,9 @@ test(`Verify end to end shopping flow for opencart application @master @e2e`,
         const telephone = DataGenerator.getPhoneNumber();
 
         await test.step('1) User Opens the application', async () => {
-            await homePage.navigateTo(process.env.WEB_APP_URL || 'http://localhost/opencart/upload/');
+            // await homePage.navigateTo(process.env.WEB_APP_URL || 'http://localhost/opencart/upload/');
+        await homePage.navigateTo(getRequiredUrl('WEB_APP_URL'));
+        
         });
 
         await test.step('2) Register a new customer using dynamically generated unique data.', async () => {

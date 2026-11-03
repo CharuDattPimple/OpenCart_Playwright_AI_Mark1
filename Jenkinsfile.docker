@@ -1,23 +1,19 @@
-// Jenkins pipeline for running Playwright tests in Docker on a Windows agent.
-
 pipeline {
   agent any
 
   options {
     timestamps()
+    skipDefaultCheckout(true)
   }
 
   parameters {
+    choice(name: 'APP_ENV', choices: ['dev', 'qa', 'uat'], description: 'Target environment')
     choice(
       name: 'TEST_SUITE',
-      choices: ['all', 'master', 'sanity', 'regression', 'api', 'web', 'e2e', 'datadriven'],
-      description: 'Select the test suite to run in Docker'
+      choices: ['all', 'master', 'api', 'web', 'e2e', 'datadriven', 'sanity', 'regression'],
+      description: 'Select the suite to run'
     )
-  }
-
-  environment {
-    NODE_ENV = 'test'
-    CI = '1'
+    string(name: 'EMAIL_TO', defaultValue: '', description: 'Optional email recipient')
   }
 
   stages {
@@ -27,53 +23,43 @@ pipeline {
       }
     }
 
-    stage('Check Docker') {
+    stage('Verify Docker') {
       steps {
         powershell '''
           docker version
-          if ($LASTEXITCODE -ne 0) {
-            exit $LASTEXITCODE
-          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
           docker compose version
-          if ($LASTEXITCODE -ne 0) {
-            exit $LASTEXITCODE
-          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         '''
       }
     }
 
-    stage('Build and Run Playwright Tests in Docker') {
+    stage('Build and run tests in Docker') {
       steps {
         script {
-          // The suite values are restricted to the choices above.
-          env.CONTAINER_TEST_SUITE = params.TEST_SUITE
+          def profileCredentialIds = [
+            dev: 'opencart-dev-env',
+            qa : 'opencart-qa-env',
+            uat: 'opencart-uat-env'
+          ]
+
+          env.PROFILE_CREDENTIAL_ID = profileCredentialIds[params.APP_ENV]
+          env.SELECTED_SUITE = params.TEST_SUITE
         }
 
         withCredentials([
-          usernamePassword(
-            credentialsId: 'opencart-test-account',
-            usernameVariable: 'APP_EMAIL',
-            passwordVariable: 'APP_PASSWORD'
+          file(
+            credentialsId: env.PROFILE_CREDENTIAL_ID,
+            variable: 'ENV_PROFILE_FILE'
           )
         ]) {
           powershell '''
-            @(
-              "WEB_APP_URL=https://awesomeqa.com/ui/"
-              "APP_URL=https://awesomeqa.com/ui/"
-              "APP_EMAIL=$env:APP_EMAIL"
-              "APP_PASSWORD=$env:APP_PASSWORD"
-            ) | Set-Content -Path .env -Encoding ascii
+            docker compose --env-file "$env:ENV_PROFILE_FILE" build playwright-tests
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-            docker compose build playwright-tests
-            if ($LASTEXITCODE -ne 0) {
-              exit $LASTEXITCODE
-            }
-
-            docker compose run --rm playwright-tests $env:CONTAINER_TEST_SUITE --project=chromium
-            if ($LASTEXITCODE -ne 0) {
-              exit $LASTEXITCODE
-            }
+            docker compose --env-file "$env:ENV_PROFILE_FILE" run --rm playwright-tests "$env:SELECTED_SUITE" --project=chromium
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           '''
         }
       }
@@ -87,10 +73,7 @@ pipeline {
         allowEmptyArchive: true
       )
 
-      junit(
-        testResults: 'reports/results.xml',
-        allowEmptyResults: true
-      )
+      junit testResults: 'reports/results.xml', allowEmptyResults: true
 
       allure(
         includeProperties: false,
@@ -106,28 +89,19 @@ pipeline {
         reportName: 'Playwright HTML Report'
       ])
 
-      publishHTML([
-        allowMissing: true,
-        alwaysLinkToLastBuild: true,
-        keepAll: true,
-        reportDir: 'custom-report',
-        reportFiles: '*.html',
-        reportName: 'Custom Test Report'
-      ])
-
-      powershell '''
-        if (Test-Path .env) {
-          Remove-Item .env -Force
+      script {
+        if (params.EMAIL_TO?.trim()) {
+          emailext(
+            to: params.EMAIL_TO,
+            subject: "Playwright ${params.APP_ENV} ${params.TEST_SUITE}: ${currentBuild.currentResult} — ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+            body: """<p>Environment: ${params.APP_ENV}</p>
+                     <p>Suite: ${params.TEST_SUITE}</p>
+                     <p>Result: ${currentBuild.currentResult}</p>
+                     <p><a href="${env.BUILD_URL}">Open Jenkins build and reports</a></p>""",
+            mimeType: 'text/html'
+          )
         }
-      '''
-    }
-
-    success {
-      powershell '''
-        if (Test-Path allure-results) {
-          Remove-Item -Recurse -Force allure-results
-        }
-      '''
+      }
     }
   }
 }
