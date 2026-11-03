@@ -170,20 +170,24 @@ flowchart TD
 
 ## 🛠️ Tech Stack
 
-| Technology                                                           | Version | Purpose                          |
-| -------------------------------------------------------------------- | ------- | -------------------------------- |
-| [Playwright](https://playwright.dev/)                                | ^1.62.1 | Browser automation & API testing |
-| [TypeScript](https://www.typescriptlang.org/)                        | 5.x     | Type-safe test code              |
-| [Node.js](https://nodejs.org/)                                       | 20+     | Runtime                          |
-| [Allure Playwright](https://www.npmjs.com/package/allure-playwright) | ^3.10.2 | Allure reporting integration     |
-| [Faker.js](https://fakerjs.dev/)                                     | ^10.5.0 | Random test data generation      |
-| [AJV](https://ajv.js.org/)                                           | ^8.20.0 | JSON Schema validation           |
-| [axe-core](https://www.npmjs.com/package/@axe-core/playwright)       | ^4.13.0 | Accessibility (WCAG) testing     |
-| [Luxon](https://moment.github.io/luxon/)                             | ^3.7.2  | Date/time manipulation           |
-| [MySQL2](https://www.npmjs.com/package/mysql2)                       | ^3.23.3 | MySQL database connectivity      |
-| [csv-parse](https://www.npmjs.com/package/csv-parse)                 | ^7.0.2  | CSV file parsing                 |
-| [xlsx](https://www.npmjs.com/package/xlsx)                           | ^0.18.5 | Excel file parsing               |
-| [dotenv](https://www.npmjs.com/package/dotenv)                       | ^17.4.2 | Environment variable management  |
+Versions below are based on the installed dependencies (`npm ls --depth=0`) and the current development environment. The Node.js and npm versions describe this machine; they are not pinned by the project.
+
+| Technology                                                           | Installed version | Purpose                          |
+| -------------------------------------------------------------------- | ----------------- | -------------------------------- |
+| [Playwright Test](https://playwright.dev/)                           | 1.64.1             | Browser automation & API testing |
+| [Playwright CLI](https://www.npmjs.com/package/@playwright/cli)      | 0.1.22             | Browser automation from CLI      |
+| [TypeScript](https://www.typescriptlang.org/)                        | 7.0.2    | Test code is written in TypeScript; no TypeScript compiler dependency is declared |
+| [Node.js](https://nodejs.org/)                                       | 24.15.0            | Runtime on the current system    |
+| [npm](https://www.npmjs.com/)                                        | 11.12.1            | Package manager on the current system |
+| [Allure Playwright](https://www.npmjs.com/package/allure-playwright) | 3.14.0             | Allure reporting integration    |
+| [Faker.js](https://fakerjs.dev/)                                     | 10.6.0             | Random test data generation      |
+| [AJV](https://ajv.js.org/)                                           | 8.20.0             | JSON Schema validation           |
+| [axe-core](https://www.npmjs.com/package/@axe-core/playwright)       | 4.14.0             | Accessibility testing            |
+| [Luxon](https://moment.github.io/luxon/)                             | 3.7.2              | Date/time manipulation           |
+| [MySQL2](https://www.npmjs.com/package/mysql2)                       | 3.24.6             | MySQL database connectivity      |
+| [csv-parse](https://www.npmjs.com/package/csv-parse)                 | 7.0.3              | CSV file parsing                 |
+| [xlsx](https://www.npmjs.com/package/xlsx)                           | 0.18.5             | Excel file parsing               |
+| [dotenv](https://www.npmjs.com/package/dotenv)                       | 18.0.8             | Environment variable management  |
 
 ---
 
