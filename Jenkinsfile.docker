@@ -20,9 +20,9 @@ pipeline {
   }
 
   stages {
-stage('Build and run tests in Docker') {
-  steps {
-    script {
+    stage('Build and run tests in Docker') {
+      steps {
+        script {
       def targetEnv = params.APP_ENV
       def needsDatabase = params.TEST_SUITE in ['all', 'uidb']
 
@@ -54,8 +54,6 @@ stage('Build and run tests in Docker') {
           usernameVariable: 'DB_USER',
           passwordVariable: 'DB_PASSWORD'
         ))
-          }
-        }
       }
 
       withCredentials(bindings) {
@@ -115,7 +113,9 @@ stage('Build and run tests in Docker') {
             Remove-Item Env:CI_COMPOSE_ENV_FILE -ErrorAction SilentlyContinue
           }
         '''
+        }
       }
+    }
     }
   }
 }

@@ -8,16 +8,36 @@ if (-not (Test-Path -LiteralPath $profilePath)) {
     throw "Environment template not found: $profilePath"
 }
 
-# Use the project's dotenv parser so comments and standard .env syntax are handled consistently.
-$env:CI_TEMPLATE_PATH = $profilePath
-$nodeScript = 'const fs=require("fs"); const dotenv=require("dotenv"); process.stdout.write(JSON.stringify(dotenv.parse(fs.readFileSync(process.env.CI_TEMPLATE_PATH))))'
-$profileJson = & node -e $nodeScript
+# Read the simple KEY=value syntax used by the checked-in environment templates.
+$template = @{}
+$lineNumber = 0
 
-if ($LASTEXITCODE -ne 0) {
-    throw 'Unable to parse the environment template.'
+foreach ($line in [System.IO.File]::ReadLines($profilePath)) {
+    $lineNumber++
+    $trimmedLine = $line.Trim()
+
+    if ([string]::IsNullOrWhiteSpace($trimmedLine) -or $trimmedLine.StartsWith('#')) {
+        continue
+    }
+
+    if ($trimmedLine -notmatch '^(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?<value>.*)$') {
+        throw "Invalid environment template syntax at line $lineNumber."
+    }
+
+    $name = $Matches['name']
+    $value = $Matches['value'].Trim()
+
+    if ($value.Length -ge 2 -and
+        (($value.StartsWith('"') -and $value.EndsWith('"')) -or
+         ($value.StartsWith("'") -and $value.EndsWith("'")))) {
+        $value = $value.Substring(1, $value.Length - 2)
+    } elseif ($value.StartsWith('"') -or $value.StartsWith("'") -or
+        $value.EndsWith('"') -or $value.EndsWith("'")) {
+        throw "Unmatched quote in environment template at line $lineNumber."
+    }
+
+    $template[$name] = $value
 }
-
-$template = $profileJson | ConvertFrom-Json
 
 if ($template.APP_ENV -ne $env:TARGET_APP_ENV) {
     throw "Template APP_ENV does not match the selected environment."
@@ -36,11 +56,10 @@ $templateKeys = @(
 )
 
 foreach ($name in $templateKeys) {
-    $property = $template.PSObject.Properties[$name]
-    if ($null -eq $property) {
+    if (-not $template.ContainsKey($name)) {
         $values[$name] = ''
     } else {
-        $values[$name] = [string]$property.Value
+        $values[$name] = [string]$template[$name]
     }
 }
 
@@ -79,6 +98,15 @@ if ($env:NEEDS_DATABASE -eq 'true') {
         'DB_PASSWORD',
         'DB_NAME'
     )
+}
+
+# In Docker, localhost resolves to the test container rather than the Jenkins host or database service.
+if (
+    $env:CREATE_COMPOSE_ENV_FILE -eq 'true' -and
+    $env:NEEDS_DATABASE -eq 'true' -and
+    [string]$values.DB_HOST -match '^(localhost|127(?:\.\d{1,3}){3}|::1)$'
+) {
+    throw 'DB_HOST cannot be localhost for Docker database suites; set it to a host or service reachable from the container.'
 }
 
 foreach ($name in $requiredNames) {

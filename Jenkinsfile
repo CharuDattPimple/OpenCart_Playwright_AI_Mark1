@@ -20,6 +20,24 @@ pipeline {
   }
 
   stages {
+    stage('Install dependencies and Chromium') {
+      steps {
+        powershell '''
+          $ErrorActionPreference = 'Stop'
+
+          npm ci
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+          npx playwright install chromium
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+        '''
+      }
+    }
+
     stage('Run Playwright tests') {
       steps {
         script {
