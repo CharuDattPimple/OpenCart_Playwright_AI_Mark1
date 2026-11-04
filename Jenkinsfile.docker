@@ -1,3 +1,25 @@
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
+  parameters {
+    choice(
+      name: 'APP_ENV',
+      choices: ['dev', 'qa', 'uat'],
+      description: 'Environment profile to test'
+    )
+    choice(
+      name: 'TEST_SUITE',
+      choices: ['all', 'master', 'api', 'web', 'e2e', 'datadriven', 'uidb'],
+      description: 'Playwright test suite to run'
+    )
+  }
+
+  stages {
 stage('Build and run tests in Docker') {
   steps {
     script {
@@ -32,6 +54,8 @@ stage('Build and run tests in Docker') {
           usernameVariable: 'DB_USER',
           passwordVariable: 'DB_PASSWORD'
         ))
+          }
+        }
       }
 
       withCredentials(bindings) {
