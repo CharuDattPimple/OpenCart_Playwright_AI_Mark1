@@ -1,302 +1,96 @@
-pipeline {
-  agent any
+stage('Build and run tests in Docker') {
+  steps {
+    script {
+      def targetEnv = params.APP_ENV
+      def needsDatabase = params.TEST_SUITE in ['all', 'uidb']
 
-  options {
-    timestamps()
-    disableConcurrentBuilds()
-    skipDefaultCheckout(true)
-  }
+      env.TARGET_APP_ENV = targetEnv
+      env.TARGET_TEST_SUITE = params.TEST_SUITE
+      env.NEEDS_DATABASE = needsDatabase ? 'true' : 'false'
 
-  parameters {
-    choice(
-      name: 'APP_ENV',
-      choices: ['dev', 'qa', 'uat'],
-      description: 'Target environment'
-    )
-    choice(
-      name: 'TEST_SUITE',
-      choices: ['all', 'master', 'api', 'web', 'e2e', 'datadriven', 'uidb'],
-      description: 'Select the suite. all includes every test; uidb runs database tests.'
-    )
-    string(
-      name: 'EMAIL_TO',
-      defaultValue: '',
-      description: 'Optional email recipient'
-    )
-  }
+      def bindings = [
+        usernamePassword(
+          credentialsId: "opencart-${targetEnv}-env",
+          usernameVariable: 'APP_EMAIL',
+          passwordVariable: 'APP_PASSWORD'
+        ),
+        usernamePassword(
+          credentialsId: "opencart-${targetEnv}-api",
+          usernameVariable: 'API_USERNAME',
+          passwordVariable: 'API_PASSWORD'
+        )
+      ]
 
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
+      if (needsDatabase) {
+        bindings.add(usernamePassword(
+          credentialsId: "opencart-${targetEnv}-admin",
+          usernameVariable: 'ADMIN_USERNAME',
+          passwordVariable: 'ADMIN_PASSWORD'
+        ))
+        bindings.add(usernamePassword(
+          credentialsId: "opencart-${targetEnv}-db",
+          usernameVariable: 'DB_USER',
+          passwordVariable: 'DB_PASSWORD'
+        ))
       }
-    }
 
-    stage('Verify Docker') {
-      steps {
+      withCredentials(bindings) {
         powershell '''
-          docker version
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $ErrorActionPreference = 'Stop'
+          $env:CREATE_COMPOSE_ENV_FILE = 'true'
 
-          docker compose version
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Parses the selected template, merges Jenkins secrets, validates settings,
+          # and writes a temporary Compose env file under the agent temp directory.
+          . (Join-Path $env:WORKSPACE 'scripts\prepare-ci-env.ps1')
+          $runtimeEnvFile = $env:CI_COMPOSE_ENV_FILE
+
+          # Isolates this job's Compose resources from other jobs/builds.
+          $composeProject = (
+            'opencart-' + $env:BUILD_NUMBER + '-' +
+            [guid]::NewGuid().ToString('N').Substring(0, 8)
+          ).ToLowerInvariant()
+
+          try {
+            docker compose -p $composeProject --env-file $runtimeEnvFile build playwright-tests
+            if ($LASTEXITCODE -ne 0) {
+              throw "Docker build failed with exit code $LASTEXITCODE."
+            }
+
+            $entrypointSuite = $env:TARGET_TEST_SUITE
+            $playwrightArgs = @('--project=chromium')
+
+            if ($env:TARGET_TEST_SUITE -eq 'all') {
+              # Overrides the config's default @master filter to run every test.
+              $playwrightArgs = @('--grep', '.*', '--project=chromium')
+            } elseif ($env:TARGET_TEST_SUITE -eq 'uidb') {
+              # The entrypoint's all branch forwards Playwright arguments directly.
+              $entrypointSuite = 'all'
+              $playwrightArgs = @('--grep', '@uidb', '--project=chromium')
+            }
+
+            $runArgs = @(
+              '-p', $composeProject,
+              '--env-file', $runtimeEnvFile,
+              'run',
+              '--rm',
+              '-e', "TEST_ENV=$($env:TARGET_APP_ENV)",
+              'playwright-tests',
+              $entrypointSuite
+            ) + $playwrightArgs
+
+            docker compose @runArgs
+            if ($LASTEXITCODE -ne 0) {
+              throw "Playwright tests failed with exit code $LASTEXITCODE."
+            }
+          }
+          finally {
+            # Removes the generated secret-bearing file even when build or tests fail.
+            if ($runtimeEnvFile -and (Test-Path -LiteralPath $runtimeEnvFile)) {
+              Remove-Item -LiteralPath $runtimeEnvFile -Force
+            }
+            Remove-Item Env:CI_COMPOSE_ENV_FILE -ErrorAction SilentlyContinue
+          }
         '''
-      }
-    }
-
-    stage('Build and run tests in Docker') {
-      steps {
-        script {
-          def targetEnv = params.APP_ENV
-          def needsDatabase = params.TEST_SUITE in ['all', 'uidb']
-
-          env.TARGET_APP_ENV = targetEnv
-          env.TARGET_TEST_SUITE = params.TEST_SUITE
-          env.NEEDS_DATABASE = needsDatabase ? 'true' : 'false'
-
-          def bindings = [
-            usernamePassword(
-              credentialsId: "opencart-${targetEnv}-env",
-              usernameVariable: 'APP_EMAIL',
-              passwordVariable: 'APP_PASSWORD'
-            ),
-            usernamePassword(
-              credentialsId: "opencart-${targetEnv}-api",
-              usernameVariable: 'API_USERNAME',
-              passwordVariable: 'API_PASSWORD'
-            ),
-            string(
-              credentialsId: "opencart-${targetEnv}-web-url",
-              variable: 'WEB_APP_URL'
-            ),
-            string(
-              credentialsId: "opencart-${targetEnv}-api-url",
-              variable: 'API_BASE_URL'
-            )
-          ]
-
-          if (needsDatabase) {
-            bindings.add(string(
-              credentialsId: "opencart-${targetEnv}-admin-url",
-              variable: 'ADMIN_APP_URL'
-            ))
-            bindings.add(usernamePassword(
-              credentialsId: "opencart-${targetEnv}-admin",
-              usernameVariable: 'ADMIN_USERNAME',
-              passwordVariable: 'ADMIN_PASSWORD'
-            ))
-            bindings.add(string(
-              credentialsId: "opencart-${targetEnv}-db-host",
-              variable: 'DB_HOST'
-            ))
-            bindings.add(string(
-              credentialsId: "opencart-${targetEnv}-db-port",
-              variable: 'DB_PORT'
-            ))
-            bindings.add(string(
-              credentialsId: "opencart-${targetEnv}-db-name",
-              variable: 'DB_NAME'
-            ))
-            bindings.add(usernamePassword(
-              credentialsId: "opencart-${targetEnv}-db",
-              usernameVariable: 'DB_USER',
-              passwordVariable: 'DB_PASSWORD'
-            ))
-          }
-
-          withCredentials(bindings) {
-            powershell '''
-              $ErrorActionPreference = 'Stop'
-
-              $values = [ordered]@{
-                APP_ENV = $env:TARGET_APP_ENV
-                TEST_ENV = $env:TARGET_APP_ENV
-                WEB_APP_URL = $env:WEB_APP_URL
-                API_BASE_URL = $env:API_BASE_URL
-                APP_EMAIL = $env:APP_EMAIL
-                APP_PASSWORD = $env:APP_PASSWORD
-                API_USERNAME = $env:API_USERNAME
-                API_PASSWORD = $env:API_PASSWORD
-                ADMIN_APP_URL = ''
-                ADMIN_USERNAME = ''
-                ADMIN_PASSWORD = ''
-                DB_HOST = ''
-                DB_PORT = ''
-                DB_USER = ''
-                DB_PASSWORD = ''
-                DB_NAME = ''
-              }
-
-              if ($env:NEEDS_DATABASE -eq 'true') {
-                $values.ADMIN_APP_URL = $env:ADMIN_APP_URL
-                $values.ADMIN_USERNAME = $env:ADMIN_USERNAME
-                $values.ADMIN_PASSWORD = $env:ADMIN_PASSWORD
-                $values.DB_HOST = $env:DB_HOST
-                $values.DB_PORT = $env:DB_PORT
-                $values.DB_USER = $env:DB_USER
-                $values.DB_PASSWORD = $env:DB_PASSWORD
-                $values.DB_NAME = $env:DB_NAME
-              }
-
-              $requiredNames = @(
-                'APP_ENV',
-                'WEB_APP_URL',
-                'API_BASE_URL',
-                'APP_EMAIL',
-                'APP_PASSWORD',
-                'API_USERNAME',
-                'API_PASSWORD'
-              )
-
-              if ($env:NEEDS_DATABASE -eq 'true') {
-                $requiredNames += @(
-                  'ADMIN_APP_URL',
-                  'ADMIN_USERNAME',
-                  'ADMIN_PASSWORD',
-                  'DB_HOST',
-                  'DB_PORT',
-                  'DB_USER',
-                  'DB_PASSWORD',
-                  'DB_NAME'
-                )
-              }
-
-              foreach ($name in $requiredNames) {
-                $value = [string]$values[$name]
-                if ([string]::IsNullOrWhiteSpace($value) -or $value -match '^<.*>$') {
-                  throw "Required Jenkins setting $name is missing or is still a placeholder."
-                }
-                if ($value.Contains("`r") -or $value.Contains("`n")) {
-                  throw "Jenkins setting $name must not contain newline characters."
-                }
-              }
-
-              if ($values.APP_ENV -ne $env:TARGET_APP_ENV) {
-                throw 'Selected environment does not match the generated profile.'
-              }
-
-              if ($env:NEEDS_DATABASE -eq 'true' -and [string]$values.DB_PORT -notmatch '^\\d+$') {
-                throw 'DB_PORT must contain a numeric port.'
-              }
-
-              function ConvertTo-ComposeEnvValue([string] $value) {
-                if ($value.Contains("`r") -or $value.Contains("`n")) {
-                  throw 'Newlines are not supported in Compose environment values.'
-                }
-
-                $quote = [string][char]39
-                $escape = ([string][char]92) + [char]39
-                $escapedValue = $value.Replace($quote, $escape)
-                return $quote + $escapedValue + $quote
-              }
-
-              $runtimeEnvFile = Join-Path $env:TEMP (
-                'opencart-' + [guid]::NewGuid().ToString('N') + '.env'
-              )
-              $composeProject = (
-                'opencart-' + $env:BUILD_NUMBER + '-' +
-                [guid]::NewGuid().ToString('N').Substring(0, 8)
-              ).ToLowerInvariant()
-
-              try {
-                $lines = foreach ($name in $values.Keys) {
-                  "$name=$(ConvertTo-ComposeEnvValue ([string]$values[$name]))"
-                }
-
-                [System.IO.File]::WriteAllLines(
-                  $runtimeEnvFile,
-                  $lines,
-                  [System.Text.UTF8Encoding]::new($false)
-                )
-
-                $buildArgs = @(
-                  '-p', $composeProject,
-                  '--env-file', $runtimeEnvFile,
-                  'build',
-                  'playwright-tests'
-                )
-                docker compose @buildArgs
-                if ($LASTEXITCODE -ne 0) {
-                  throw "Docker image build failed with exit code $LASTEXITCODE."
-                }
-
-                $entrypointSuite = $env:TARGET_TEST_SUITE
-                $playwrightArgs = @('--project=chromium')
-
-                if ($env:TARGET_TEST_SUITE -eq 'all') {
-                  # Overrides the config's @master filter so this really runs all tests.
-                  $playwrightArgs = @('--grep', '.*', '--project=chromium')
-                } elseif ($env:TARGET_TEST_SUITE -eq 'uidb') {
-                  # The entrypoint's all branch forwards Playwright CLI options directly.
-                  $entrypointSuite = 'all'
-                  $playwrightArgs = @('--grep', '@uidb', '--project=chromium')
-                }
-
-                $runArgs = @(
-                  '-p', $composeProject,
-                  '--env-file', $runtimeEnvFile,
-                  'run',
-                  '--rm',
-                  '-e', "TEST_ENV=$($env:TARGET_APP_ENV)",
-                  'playwright-tests',
-                  $entrypointSuite
-                ) + $playwrightArgs
-
-                docker compose @runArgs
-                if ($LASTEXITCODE -ne 0) {
-                  throw "Playwright tests failed with exit code $LASTEXITCODE."
-                }
-              }
-              finally {
-                if (Test-Path -LiteralPath $runtimeEnvFile) {
-                  Remove-Item -LiteralPath $runtimeEnvFile -Force
-                }
-              }
-            '''
-          }
-        }
-      }
-    }
-  }
-
-  post {
-    always {
-      archiveArtifacts(
-        artifacts: 'reports/**,custom-report/**,allure-results/**,test-results/**',
-        allowEmptyArchive: true
-      )
-
-      junit(
-        testResults: 'reports/results.xml',
-        allowEmptyResults: true
-      )
-
-      allure(
-        includeProperties: false,
-        results: [[path: 'allure-results']]
-      )
-
-      publishHTML([
-        allowMissing: true,
-        alwaysLinkToLastBuild: true,
-        keepAll: true,
-        reportDir: 'reports',
-        reportFiles: 'index.html',
-        reportName: 'Playwright HTML Report'
-      ])
-
-      script {
-        if (params.EMAIL_TO?.trim()) {
-          emailext(
-            to: params.EMAIL_TO,
-            subject: "Playwright ${params.APP_ENV} ${params.TEST_SUITE}: ${currentBuild.currentResult} - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-            body: """<p>Environment: ${params.APP_ENV}</p>
-                     <p>Suite: ${params.TEST_SUITE}</p>
-                     <p>Result: ${currentBuild.currentResult}</p>
-                     <p><a href="${env.BUILD_URL}">Open Jenkins build and reports</a></p>""",
-            mimeType: 'text/html'
-          )
-        }
       }
     }
   }
