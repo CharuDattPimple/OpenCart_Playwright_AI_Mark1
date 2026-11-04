@@ -41,7 +41,7 @@ stage('Run Playwright tests') {
 
           # Loads non-secret configuration from the selected checked-in template,
           # then merges it with credentials bound above.
-          . (Join-Path $env:WORKSPACE 'scripts\prepare-ci-env.ps1')
+          . (Join-Path $env:WORKSPACE 'scripts/prepare-ci-env.ps1')
 
           if ($env:TARGET_TEST_SUITE -eq 'all') {
             # Overrides the config's default @master filter to run all discovered tests.

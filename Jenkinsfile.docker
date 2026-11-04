@@ -41,7 +41,7 @@ stage('Build and run tests in Docker') {
 
           # Parses the selected template, merges Jenkins secrets, validates settings,
           # and writes a temporary Compose env file under the agent temp directory.
-          . (Join-Path $env:WORKSPACE 'scripts\prepare-ci-env.ps1')
+          . (Join-Path $env:WORKSPACE 'scripts/prepare-ci-env.ps1')
           $runtimeEnvFile = $env:CI_COMPOSE_ENV_FILE
 
           # Isolates this job's Compose resources from other jobs/builds.
