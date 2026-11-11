@@ -28,7 +28,7 @@
     - [2️⃣ Install Dependencies](#2️⃣-install-dependencies)
     - [3️⃣ Install Playwright Browsers](#3️⃣-install-playwright-browsers)
     - [4️⃣ Configure Environment](#4️⃣-configure-environment)
-    - [5️⃣ Run All Tests](#5️⃣-run-all-tests)
+    - [5️⃣ Run the Master Suite](#5️⃣-run-the-master-suite)
   - [🔧 Environment Configuration](#-environment-configuration)
   - [🏷️ Test Suites \& Tags](#️-test-suites--tags)
   - [▶️ Running Tests](#️-running-tests)
@@ -41,6 +41,7 @@
     - [Run with grep (custom tag filter)](#run-with-grep-custom-tag-filter)
     - [Run in CI Mode (headless, 2 retries, 1 worker)](#run-in-ci-mode-headless-2-retries-1-worker)
   - [🔄 Test Execution Flow](#-test-execution-flow)
+  - [🔌 Product API Test Flow](#-product-api-test-flow)
   - [📊 Reporting](#-reporting)
   - [🐳 Docker Setup](#-docker-setup)
     - [Docker Architecture](#docker-architecture)
@@ -49,9 +50,6 @@
     - [Pass Extra Playwright Arguments](#pass-extra-playwright-arguments)
     - [Key Docker Features](#key-docker-features)
   - [🚇 CI/CD with Jenkins](#-cicd-with-jenkins)
-    - [Pipeline Stages](#pipeline-stages)
-    - [Pipeline Parameters](#pipeline-parameters)
-    - [Post-Build Actions](#post-build-actions)
   - [🔧 Utilities](#-utilities)
   - [📋 Coding Guidelines](#-coding-guidelines)
   - [CI - Git Hub Copilot](#ci---git-hub-copilot)
@@ -67,7 +65,7 @@ This framework provides a **unified, scalable automation solution** for testing 
 | Layer           | Technology                                  | What We Test                                                                       |
 | --------------- | ------------------------------------------- | ---------------------------------------------------------------------------------- |
 | 🌐 **Web UI**   | Playwright + Page Object Model              | Customer registration, login/logout, product search, cart management, admin portal |
-| 🔌 **REST API** | Playwright `request` fixture + FakeStoreAPI | Products, users, carts, authentication, schema validation                          |
+| 🔌 **REST API** | Playwright `request` fixture + FakeStoreAPI | Product, user, cart, and authentication endpoint checks with response assertions   |
 | 🗄️ **Database** | MySQL2 + Admin Portal                       | End-to-end customer registration with DB verification                              |
 
 It is designed for **CI/CD integration** (Jenkins + Docker), supports **multiple reporting formats**, and follows **industry best practices** for maintainability and readability.
@@ -82,7 +80,7 @@ It is designed for **CI/CD integration** (Jenkins + Docker), supports **multiple
 - ✅ **Tag-Based Test Suites** — `@sanity`, `@regression`, `@api`, `@web`, `@e2e`, `@master`, `@datadriven`
 - ✅ **Data-Driven Testing** — CSV, JSON, and Excel test data sources
 - ✅ **Random Test Data Generation** — Powered by Faker.js
-- ✅ **Schema Validation** — JSON Schema validation for API responses via AJV
+- ✅ **API Response Assertions** — Status, response shape, and field checks in API specs
 - ✅ **Accessibility Checks** — WCAG compliance testing via axe-core
 - ✅ **Multiple Reporters** — HTML, Allure, Custom HTML dashboard
 - ✅ **Parallel Execution** — Fully parallel test execution with configurable workers
@@ -100,7 +98,9 @@ flowchart TD
     DOCKER["Docker image + entrypoint"] -. optional .-> EXEC
 
     CONFIG["playwright.config.ts<br/>Chromium, tags, retries, artifacts"] --> RUNNER
-    ENV[".env<br/>Application, API, admin, and DB settings"] --> TESTS
+    PROFILES["config/environments/.env.<env><br/>Local profile or CI-injected values"] --> ENVHELPER["utils/environment.ts"]
+    CIHELPER["scripts/prepare-ci-env.ps1<br/>Jenkins template + Credentials merge"] -. CI .-> ENVHELPER
+    ENVHELPER --> RUNNER
 
     RUNNER --> TESTS
     subgraph TESTS["Test suites"]
@@ -115,6 +115,7 @@ flowchart TD
     PAGES --> STORE["OpenCart storefront and admin"]
 
     API --> ROUTES["api/endpoints/routes.ts"]
+    API --> REQUEST["Playwright built-in request fixture"]
     API --> APITARGET["API target"]
 
     WEB --> SHARED["Shared utilities"]
@@ -148,23 +149,61 @@ flowchart TD
 
 ### 📂 Folder Breakdown
 
-| Path              | Purpose                                                                 |
-| ----------------- | ----------------------------------------------------------------------- |
-| `pages/`          | Page Object classes — each encapsulates locators + actions for a page   |
-| `fixtures/`       | Custom Playwright test fixtures for type-safe page object injection     |
-| `tests/web/`      | Web UI test specs (login, registration, cart, search, etc.)             |
-| `tests/api/`      | REST API test specs against FakeStoreAPI                                |
-| `tests/db/`       | Database validation tests (MySQL)                                       |
-| `api/endpoints/`  | Centralized API route definitions                                       |
-| `api/schemas/`    | JSON Schema files for API response validation                           |
-| `utils/`          | Shared utilities (data generation, readers, DB client, custom reporter) |
-| `testdata/`       | External test data files (CSV, JSON, Excel)                             |
-| `reports/`        | Generated HTML + JUnit reports                                          |
-| `allure-results/` | Allure-compatible test result files                                     |
-| `custom-report/`  | Custom HTML dashboard output                                            |
-| `test-results/`   | Playwright test artifacts (screenshots, videos, traces)                 |
-| `docs/`           | Additional documentation                                                |
-| `prompts/`        | AI prompt templates for test generation                                 |
+```text
+.
+├── .github/
+│   ├── agents/                       # Playwright test planner, generator, and healer agents
+│   └── workflows/                    # GitHub Actions setup and Playwright workflow
+├── api/
+│   ├── endpoints/routes.ts           # Central API route constants
+│   └── schemas/                      # Optional API JSON schemas
+├── config/environments/
+│   ├── .env.dev.example              # Safe dev profile template
+│   ├── .env.qa.example               # Safe QA profile template
+│   └── .env.uat.example              # Safe UAT profile template
+├── docs/                             # Framework, Docker, Jenkins, and usage guides
+├── fixtures/pageFixtures.ts          # Custom fixtures that provide web page objects
+├── pages/                            # Web Page Object classes
+├── prompts/                          # Local test-generation prompts (ignored by Git)
+├── scripts/prepare-ci-env.ps1        # Validates/merges CI profile and secrets; creates Docker env file when needed
+├── tests/
+│   ├── api/                          # API specs using Playwright's built-in request fixture
+│   ├── db/                           # Database-backed end-to-end specs
+│   └── web/                          # Browser UI specs
+├── testdata/                         # CSV/JSON test data
+├── utils/
+│   ├── environment.ts                # Selects local profile or validates CI-injected environment values
+│   ├── dataGenerator.ts              # Faker-backed values and API payloads
+│   ├── DataReader.ts                 # CSV, JSON, and Excel readers
+│   ├── dbClient.ts                   # MySQL access
+│   └── CustomReporter.ts             # Custom Playwright reporter
+├── .dockerignore / .gitignore         # Docker build exclusions and Git ignore rules
+├── Dockerfile                         # Playwright test image
+├── docker-compose.yml                 # Test service and report mounts
+├── docker-entrypoint.sh               # Maps suite names to Playwright/npm commands
+├── Jenkinsfile                        # Direct Playwright execution on a Jenkins agent
+├── Jenkinsfile.docker                 # Docker Compose execution from Jenkins
+├── package.json / package-lock.json   # Dependencies and npm scripts/lockfile
+├── playwright.config.ts               # Test discovery, environment URL, project, tags, and reporters
+├── playwright-mcp-context.md          # AI-assisted test-generation conventions
+└── tsconfig.json                      # TypeScript compiler settings
+```
+
+Local environment files (`config/environments/.env.dev`, `.env.qa`, and `.env.uat`)
+are created from the matching example templates and are ignored by Git. Keep real
+credentials only in those local files or in Jenkins Credentials, never in the
+checked-in `.example` templates.
+
+| Path | Purpose |
+| --- | --- |
+| `config/environments/*.example` | Checked-in, non-secret environment templates for dev, QA, and UAT |
+| `utils/environment.ts` | Loads the selected local profile; in CI, validates variables injected by the pipeline |
+| `scripts/prepare-ci-env.ps1` | Merges a selected template with Jenkins credentials and validates required settings |
+| `Jenkinsfile` | Installs dependencies/Chromium and runs the selected suite directly on the agent |
+| `Jenkinsfile.docker` | Uses the CI helper and Docker Compose to build and run the selected suite |
+| `.github/workflows/` | GitHub Actions setup and test workflow definitions |
+| `prompts/` | Local test-generation prompts; ignored by Git and not part of the CI checkout |
+| `reports/`, `allure-results/`, `custom-report/`, `test-results/` | Generated reports and failure artifacts; created or populated during runs |
 
 ---
 
@@ -181,7 +220,7 @@ Versions below are based on the installed dependencies (`npm ls --depth=0`) and 
 | [npm](https://www.npmjs.com/)                                        | 11.12.1            | Package manager on the current system |
 | [Allure Playwright](https://www.npmjs.com/package/allure-playwright) | 3.14.0             | Allure reporting integration    |
 | [Faker.js](https://fakerjs.dev/)                                     | 10.6.0             | Random test data generation      |
-| [AJV](https://ajv.js.org/)                                           | 8.20.0             | JSON Schema validation           |
+| [AJV](https://ajv.js.org/)                                           | 8.20.0             | Optional JSON Schema validation support |
 | [axe-core](https://www.npmjs.com/package/@axe-core/playwright)       | 4.14.0             | Accessibility testing            |
 | [Luxon](https://moment.github.io/luxon/)                             | 3.7.2              | Date/time manipulation           |
 | [MySQL2](https://www.npmjs.com/package/mysql2)                       | 3.24.6             | MySQL database connectivity      |
@@ -228,63 +267,49 @@ npx playwright install --with-deps
 ### 4️⃣ Configure Environment
 
 ```bash
-cp .env.example .env
+cp config/environments/.env.qa.example config/environments/.env.qa
 ```
 
-Edit `.env` with your application URLs and credentials (see [Environment Configuration](#-environment-configuration)).
+Edit the local `.env.qa` profile with the appropriate environment values and
+credentials. Keep this un-suffixed profile file uncommitted. The same pattern
+applies to dev and UAT; see [Environment Configuration](#-environment-configuration).
 
-### 5️⃣ Run All Tests
+### 5️⃣ Run the Master Suite
 
 ```bash
-npx playwright test
+npm run test:master
 ```
 
 ---
 
 ## 🔧 Environment Configuration
 
-The framework uses a `.env` file for all configurable settings. Copy `.env.example` to `.env` and update the values:
+Choose one of the supported profiles: `dev`, `qa`, or `uat`. For a local run,
+copy the matching checked-in template (for example
+`config/environments/.env.qa.example`) to `.env.qa` in the same folder and fill in
+the environment-specific values. The un-suffixed profile files are ignored by Git.
+Set `APP_ENV` to the profile name; locally it defaults to `qa` when omitted.
+`utils/environment.ts` loads the matching local profile. In CI, variables are
+injected by the pipeline instead of loading the local profile.
+
+The checked-in templates contain safe, non-secret settings. Add account credentials
+to the ignored local profile only when needed; Jenkins obtains secrets from Jenkins
+Credentials. A profile contains fields such as:
 
 ```env
-# Environment
-APP_ENV=qa                          # qa | prod | dev
-
-# Web Application
-WEB_APP_URL=https://awesomeqa.com/ui/
-APP_EMAIL=your-email@example.com
-APP_PASSWORD=your-password
-
-# Product Details (for cart tests)
-PRODUCT_NAME=MacBook
-PRODUCT_QUANTITY=1
-TOTAL_PRICE=$602.00
-
-# API (FakeStoreAPI)
+APP_ENV=qa
+WEB_APP_URL=<QA web application URL>
 API_BASE_URL=https://fakestoreapi.com
-USERNAME=mor_2314
-PASSWORD=83r5^_
-USER_ID=1
-PRODUCT_ID=1
-CART_ID=1
-LIMIT=3
-START_DATE=2019-12-10
-END_DATE=2020-10-10
-
-# Database (MySQL)
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your-db-password
-DB_NAME=opencart
-
-# Admin Portal
-ADMIN_URL=http://localhost/opencart/upload/admin/index.php
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin123
+ADMIN_APP_URL=<QA admin URL>
+DB_HOST=<database host reachable by the test runner>
+DB_PORT=<database port>
+DB_NAME=<database name>
 ```
 
----
+For Docker database suites, `DB_HOST` must resolve from inside the container;
+`localhost` refers to the test container itself.
 
+---
 ## 🏷️ Test Suites & Tags
 
 Tests are organized using Playwright's tag system (`@tag-name` in test titles). Each tag maps to a reusable npm script:
@@ -314,8 +339,12 @@ test('Register customer, verify in admin portal and MySQL @master @end-to-end @d
 ### Run All Tests
 
 ```bash
-npx playwright test
+npx playwright test --grep ".*"
 ```
+
+`playwright.config.ts` defaults to `@master`, so plain `npx playwright test`
+runs the master-tagged tests. Use `--grep ".*"` to override that default and run
+all discovered tests.
 
 ### Run by Tag (npm scripts)
 
@@ -332,7 +361,7 @@ npm run test:datadriven      # Data-driven tests
 ### Run in Headed Mode (with browser visible)
 
 ```bash
-npm run test:master:headed
+npx playwright test --grep "@master" --headed
 ```
 
 ### Run with Debugging
@@ -372,6 +401,40 @@ set CI=true && npx playwright test
 
 <img width="3616" height="4158" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/fa98bd02-d02a-4c69-935d-70a44900dc68" />
 
+## 🔌 Product API Test Flow
+
+`tests/api/products.spec.ts` runs a serial CRUD workflow using Playwright's built-in
+`request` fixture. It does not use the custom web page fixtures or load a JSON schema.
+
+```text
+Playwright config / selected environment
+        ↓
+tests/api/products.spec.ts
+        ├── utils/environment.ts → validates APP_ENV and provides API_BASE_URL
+        ├── utils/dataGenerator.ts → creates POST and PUT product payloads
+        └── api/endpoints/routes.ts → supplies product endpoint paths
+        ↓
+Playwright's built-in { request } fixture
+        ↓
+FakeStoreAPI product endpoints
+        ↓
+Status-code and response-field assertions in the spec
+```
+
+The tests execute in this order:
+
+1. **GET all products** — requests `Routes.GET_ALL_PRODUCTS` and checks the status,
+   array response, and required product fields.
+2. **POST a product** — generates a payload with `DataGenerator`, checks the response,
+   and stores the returned product ID.
+3. **GET a configured product** — uses `PRODUCT_ID` (default `1`) and checks the
+   returned product fields. This is separate from the ID returned by the POST.
+4. **PUT the created product** — generates an updated payload and uses the ID captured
+   from the POST response.
+5. **DELETE the created product** — sends the delete request using that captured ID.
+
+`api/schemas/product_api_schema.json` exists in the repository, but this spec does not
+load it or perform JSON-schema validation; it checks response fields directly.
 
 
 
@@ -464,34 +527,30 @@ docker compose run --rm playwright-tests web --headed --workers 2
 
 ## 🚇 CI/CD with Jenkins
 
-The project includes a **declarative Jenkins pipeline** (`Jenkinsfile`) for Windows build agents.
+Two Declarative pipelines are provided:
 
-### Pipeline Stages
+| Pipeline file | Execution mode | What it does |
+| --- | --- | --- |
+| `Jenkinsfile` | Direct on the Jenkins agent | Installs npm dependencies and Chromium, prepares environment values, then runs the selected Playwright suite |
+| `Jenkinsfile.docker` | Docker Compose | Uses `scripts/prepare-ci-env.ps1` to combine the selected safe profile template with Jenkins Credentials, builds the `playwright-tests` image, and runs the selected suite in a one-off container |
 
-```mermaid
-flowchart LR
-    A["🔄 Checkout"] --> B["📦 Install<br/>Dependencies"]
-    B --> C["🤖 Install<br/>Playwright Browsers"]
-    C --> D["🧪 Run Tests"]
-    D --> E["📊 Archive<br/>Reports"]
-    E --> F["📧 Email<br/>Notification"]
-```
+Both pipelines accept `APP_ENV` (`dev`, `qa`, `uat`) and `TEST_SUITE`
+(`all`, `master`, `api`, `web`, `e2e`, `datadriven`, `uidb`). The `all` option
+overrides the default `@master` filter to run all discovered tests; `uidb` selects
+the `@uidb` tests. The Docker pipeline also requires Docker Compose on its agent.
 
-### Pipeline Parameters
+The checked-in GitHub Actions workflow has not yet been migrated to this profile
+setup: it still expects a root `.env.example` and does not inject the required
+environment selection and secrets. Do not rely on it for these environment
+profiles until it is updated.
 
-| Parameter    | Choices                                                                                                | Description             |
-| ------------ | ------------------------------------------------------------------------------------------------------ | ----------------------- |
-| `TEST_SUITE` | `test:e2e`, `test:master`, `test:sanity`, `test:regression`, `test:api`, `test:web`, `test:datadriven` | Which tests to run      |
-| `BROWSER`    | `chromium`, `firefox`, `webkit`                                                                        | Browser selection       |
-| `MODE`       | `headless`, `headed`                                                                                   | Headless or headed mode |
-
-### Post-Build Actions
-
-- ✅ Archives HTML reports
-- ✅ Publishes JUnit XML results (test trend graph)
-- ✅ Generates and publishes Allure reports
-- ✅ Sends email notifications with status and report links
-- ✅ Cleans up `allure-results` on success
+Configure Jenkins Credentials using the IDs expected by the pipeline:
+`opencart-<environment>-env`, `opencart-<environment>-api`, and, for database
+suites, `opencart-<environment>-admin` and `opencart-<environment>-db`. The
+environment helper validates required settings and removes the temporary Compose
+environment file after the Docker run. Reports are written to the configured
+workspace folders; the current pipeline files do not include Jenkins report
+archiving or publishing stages.
 
 ---
 
@@ -499,9 +558,9 @@ flowchart LR
 
 | Utility          | File                      | Purpose                                                                 |
 | ---------------- | ------------------------- | ----------------------------------------------------------------------- |
-| `RandomDataUtil` | `utils/dataGenerator.ts`  | Generate random names, emails, passwords, addresses, dates via Faker.js |
+| `DataGenerator`  | `utils/dataGenerator.ts`  | Generate random names, emails, passwords, and API payloads via Faker.js |
 | `DataProvider`   | `utils/DataReader.ts`     | Read test data from CSV, JSON, and Excel files                          |
-| `Helper`         | `utils/helper.ts`         | Price string-to-number conversion, static test data helpers             |
+| `environment`   | `utils/environment.ts`    | Selects a local profile or validates CI-injected environment variables  |
 | `executeQuery`   | `utils/dbClient.ts`       | Execute MySQL queries with parameterized inputs                         |
 | `CustomReporter` | `utils/CustomReporter.ts` | Custom Playwright reporter generating a rich HTML dashboard             |
 
@@ -518,7 +577,7 @@ flowchart LR
 - Run `npx playwright test` locally before submitting
 
 ---
-## CI - Git Hub Copilot 
+## CI - Git Hub Copilot
 <img width="1890" height="827" alt="image" src="https://github.com/user-attachments/assets/3c1bec32-9223-409e-8bbc-42ee61ecd476" />
 
 ## CI using Jenkins Pipeline
@@ -530,7 +589,7 @@ flowchart LR
 <div >
     <h3>Charudatt Pimple </h3>
     <p><em>SDET</em></p>
- 
+
 </div>
 
 ---

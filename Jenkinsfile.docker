@@ -1,17 +1,22 @@
 pipeline {
+  // Uses a Jenkins agent with PowerShell, Docker Compose, and Node.js available.
   agent any
 
   options {
+    // Adds timestamps to console output for easier troubleshooting.
     timestamps()
+    // Prevents concurrent builds from contending for the same workspace and reports.
     disableConcurrentBuilds()
   }
 
   parameters {
+    // Selects the environment template and matching Jenkins credential IDs.
     choice(
       name: 'APP_ENV',
       choices: ['dev', 'qa', 'uat'],
       description: 'Environment profile to test'
     )
+    // Selects a suite supported by the Docker entrypoint or the special uidb branch below.
     choice(
       name: 'TEST_SUITE',
       choices: ['all', 'master', 'api', 'web', 'e2e', 'datadriven', 'uidb'],
@@ -23,99 +28,111 @@ pipeline {
     stage('Build and run tests in Docker') {
       steps {
         script {
-      def targetEnv = params.APP_ENV
-      def needsDatabase = params.TEST_SUITE in ['all', 'uidb']
+          // Reads the selected profile name and determines whether the suite uses admin/DB settings.
+          def targetEnv = params.APP_ENV
+          def needsDatabase = params.TEST_SUITE in ['all', 'uidb']
 
-      env.TARGET_APP_ENV = targetEnv
-      env.TARGET_TEST_SUITE = params.TEST_SUITE
-      env.NEEDS_DATABASE = needsDatabase ? 'true' : 'false'
+          // Makes Jenkins selections available to the PowerShell helper and test container.
+          env.TARGET_APP_ENV = targetEnv
+          env.TARGET_TEST_SUITE = params.TEST_SUITE
+          env.NEEDS_DATABASE = needsDatabase ? 'true' : 'false'
 
-      def bindings = [
-        usernamePassword(
-          credentialsId: "opencart-${targetEnv}-env",
-          usernameVariable: 'APP_EMAIL',
-          passwordVariable: 'APP_PASSWORD'
-        ),
-        usernamePassword(
-          credentialsId: "opencart-${targetEnv}-api",
-          usernameVariable: 'API_USERNAME',
-          passwordVariable: 'API_PASSWORD'
-        )
-      ]
+          // Binds Jenkins Username-with-password credentials to the app and API env variable names.
+          def bindings = [
+            usernamePassword(
+              credentialsId: "opencart-${targetEnv}-env",
+              usernameVariable: 'APP_EMAIL',
+              passwordVariable: 'APP_PASSWORD'
+            ),
+            usernamePassword(
+              credentialsId: "opencart-${targetEnv}-api",
+              usernameVariable: 'API_USERNAME',
+              passwordVariable: 'API_PASSWORD'
+            )
+          ]
 
-      if (needsDatabase) {
-        bindings.add(usernamePassword(
-          credentialsId: "opencart-${targetEnv}-admin",
-          usernameVariable: 'ADMIN_USERNAME',
-          passwordVariable: 'ADMIN_PASSWORD'
-        ))
-        bindings.add(usernamePassword(
-          credentialsId: "opencart-${targetEnv}-db",
-          usernameVariable: 'DB_USER',
-          passwordVariable: 'DB_PASSWORD'
-        ))
-      }
-
-      withCredentials(bindings) {
-        powershell '''
-          $ErrorActionPreference = 'Stop'
-          $env:CREATE_COMPOSE_ENV_FILE = 'true'
-
-          # Parses the selected template, merges Jenkins secrets, validates settings,
-          # and writes a temporary Compose env file under the agent temp directory.
-          . (Join-Path $env:WORKSPACE 'scripts/prepare-ci-env.ps1')
-          $runtimeEnvFile = $env:CI_COMPOSE_ENV_FILE
-
-          # Isolates this job's Compose resources from other jobs/builds.
-          $composeProject = (
-            'opencart-' + $env:BUILD_NUMBER + '-' +
-            [guid]::NewGuid().ToString('N').Substring(0, 8)
-          ).ToLowerInvariant()
-
-          try {
-            docker compose -p $composeProject --env-file $runtimeEnvFile build playwright-tests
-            if ($LASTEXITCODE -ne 0) {
-              throw "Docker build failed with exit code $LASTEXITCODE."
-            }
-
-            $entrypointSuite = $env:TARGET_TEST_SUITE
-            $playwrightArgs = @('--project=chromium')
-
-            if ($env:TARGET_TEST_SUITE -eq 'all') {
-              # Overrides the config's default @master filter to run every test.
-              $playwrightArgs = @('--grep', '.*', '--project=chromium')
-            } elseif ($env:TARGET_TEST_SUITE -eq 'uidb') {
-              # The entrypoint's all branch forwards Playwright arguments directly.
-              $entrypointSuite = 'all'
-              $playwrightArgs = @('--grep', '@uidb', '--project=chromium')
-            }
-
-            $runArgs = @(
-              '-p', $composeProject,
-              '--env-file', $runtimeEnvFile,
-              'run',
-              '--rm',
-              '-e', "TEST_ENV=$($env:TARGET_APP_ENV)",
-              'playwright-tests',
-              $entrypointSuite
-            ) + $playwrightArgs
-
-            docker compose @runArgs
-            if ($LASTEXITCODE -ne 0) {
-              throw "Playwright tests failed with exit code $LASTEXITCODE."
-            }
+          // Requests admin and database credentials only for suites that can use those services.
+          if (needsDatabase) {
+            bindings.add(usernamePassword(
+              credentialsId: "opencart-${targetEnv}-admin",
+              usernameVariable: 'ADMIN_USERNAME',
+              passwordVariable: 'ADMIN_PASSWORD'
+            ))
+            bindings.add(usernamePassword(
+              credentialsId: "opencart-${targetEnv}-db",
+              usernameVariable: 'DB_USER',
+              passwordVariable: 'DB_PASSWORD'
+            ))
           }
-          finally {
-            # Removes the generated secret-bearing file even when build or tests fail.
-            if ($runtimeEnvFile -and (Test-Path -LiteralPath $runtimeEnvFile)) {
-              Remove-Item -LiteralPath $runtimeEnvFile -Force
-            }
-            Remove-Item Env:CI_COMPOSE_ENV_FILE -ErrorAction SilentlyContinue
+
+          // Restricts the lifetime and scope of the bound secrets to the commands in this block.
+          withCredentials(bindings) {
+            powershell '''
+              # Fails the pipeline on PowerShell errors instead of continuing with invalid settings.
+              $ErrorActionPreference = 'Stop'
+              # Asks the helper to create a temporary env file for Docker Compose interpolation.
+              $env:CREATE_COMPOSE_ENV_FILE = 'true'
+
+              # Reads non-secret profile values, merges Jenkins secrets, validates required values,
+              # and writes the combined values to a temporary file outside the workspace.
+              . (Join-Path $env:WORKSPACE 'scripts/prepare-ci-env.ps1')
+              $runtimeEnvFile = $env:CI_COMPOSE_ENV_FILE
+
+              # Gives this build a unique Compose project name to avoid collisions with other jobs.
+              $composeProject = (
+                'opencart-' + $env:BUILD_NUMBER + '-' +
+                [guid]::NewGuid().ToString('N').Substring(0, 8)
+              ).ToLowerInvariant()
+
+              try {
+                # Builds the test image using the same generated environment file as the test run.
+                docker compose -p $composeProject --env-file $runtimeEnvFile build playwright-tests
+                if ($LASTEXITCODE -ne 0) {
+                  throw "Docker build failed with exit code $LASTEXITCODE."
+                }
+
+                # Starts with the selected suite; Playwright options are appended below.
+                $entrypointSuite = $env:TARGET_TEST_SUITE
+                $playwrightArgs = @('--project=chromium')
+
+                if ($env:TARGET_TEST_SUITE -eq 'all') {
+                  # Replaces the config's default @master filter so every discovered test can run.
+                  $playwrightArgs = @('--grep', '.*', '--project=chromium')
+                } elseif ($env:TARGET_TEST_SUITE -eq 'uidb') {
+                  # The entrypoint accepts suite names, so use its all branch and filter by @uidb.
+                  $entrypointSuite = 'all'
+                  $playwrightArgs = @('--grep', '@uidb', '--project=chromium')
+                }
+
+                # Passes Compose settings, the suite name, and Playwright arguments to the container.
+                $runArgs = @(
+                  '-p', $composeProject,
+                  '--env-file', $runtimeEnvFile,
+                  'run',
+                  '--rm',
+                  '-e', "TEST_ENV=$($env:TARGET_APP_ENV)",
+                  'playwright-tests',
+                  $entrypointSuite
+                ) + $playwrightArgs
+
+                # Runs the selected tests in a one-off container and returns a nonzero test failure.
+                docker compose @runArgs
+                if ($LASTEXITCODE -ne 0) {
+                  throw "Playwright tests failed with exit code $LASTEXITCODE."
+                }
+              }
+              finally {
+                # Deletes the generated file even if the build or test command fails.
+                if ($runtimeEnvFile -and (Test-Path -LiteralPath $runtimeEnvFile)) {
+                  Remove-Item -LiteralPath $runtimeEnvFile -Force
+                }
+                # Clears the temporary file path from the PowerShell environment.
+                Remove-Item Env:CI_COMPOSE_ENV_FILE -ErrorAction SilentlyContinue
+              }
+            '''
           }
-        '''
         }
       }
-    }
     }
   }
 }

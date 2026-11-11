@@ -55,8 +55,8 @@ The instructions in this file are detailed and deterministic so different AI cod
 - **UI pattern:** Page Object Model (POM) under `pages/`, exposed to tests via custom fixtures in `fixtures/pageFixtures.ts`
 - **API testing:** Playwright's built-in `request` fixture (or `APIRequestContext`) against the REST API under test
 - **Data:** Faker.js random data generation, JSON/CSV/Excel readers, static/fixed test-data helpers
-- **Validation:** JSON-schema validation (e.g. AJV) for API responses, with schemas stored under `api/schemas/`
-- **Environment:** `dotenv` + `.env` for URLs, credentials, IDs, and other environment-specific values
+- **Validation:** API specs assert status, response shape, and fields directly; JSON-schema validation is optional and must be explicitly invoked by a test
+- **Environment:** `utils/environment.ts` validates `APP_ENV`, loads the selected local environment profile, and reads CI-injected variables; follow the existing helper rather than loading dotenv again
 - **Reports:** Playwright HTML reporter, optional custom reporter, optional Allure or other reporting integrations
 - **Prompt sources (generation drivers):** one or more test prompt files supplied per project (Web scenarios, API scenarios, DB scenarios, or a combined prompt) — these prompts are the **only** source of new test scenarios; this context file supplies everything about *how* to implement them
 
@@ -124,11 +124,13 @@ Do not introduce a new architectural pattern when the framework convention in th
 
 The folders below are the **generic target layout**. Not every project needs every folder — include only the layers (Web / API / DB) that the supplied test prompt(s) require. If the project already has an established structure that differs, extend that structure instead of imposing this one.
 
+**Current repository note:** this generic tree is not the literal directory layout of this OpenCart project. The project-specific structure, including `config/environments/*.example`, `utils/environment.ts`, `scripts/prepare-ci-env.ps1`, and both Jenkins pipeline files, is documented in `README.md`. Follow that concrete structure for this repository; do not add a root `.env` or `.env.example` here.
+
 ```
 ├── .env                          # Env vars: app URL(s), API base URL(s), credentials, IDs, DB config
 ├── api/
 │   ├── endpoints/routes.ts       # Routes constants object (all API endpoints of the app under test)
-│   └── schemas/                  # JSON response/request schemas for schema validation
+│   └── schemas/                  # Optional JSON schemas; tests must explicitly load and validate them
 ├── fixtures/
 │   └── pageFixtures.ts           # Custom fixtures exposing Web page objects (re-exports expect)
 ├── pages/                        # Page Object classes (PascalCase, one class per file)
@@ -184,11 +186,15 @@ API Test Prompt (scenario)
         ↓
 Endpoint/Route Analysis
         ↓
-Schemas
+Environment + Routes
         ↓
-Test Data / Utilities
+Playwright request fixture
         ↓
-API Test
+Test Data / Utilities (when needed)
+        ↓
+API Test + Response Assertions
+        ↓
+Optional Schema Validation (only when required)
 ```
 
 ## DB
@@ -431,7 +437,7 @@ Never modify application behavior to accommodate an incorrect test.
 
 // using custom fixtures
 import { test, expect } from '../../fixtures/pageFixtures'
-import { RandomDataUtil } from '../../utils/dataGenerator';
+import { DataGenerator } from '../../utils/dataGenerator';
 import { Helper } from '../../utils/helper';
 
 test('<Description> test @master @sanity', async ({ homePage, loginPage, myAccountPage }) => {
@@ -564,11 +570,11 @@ Analyze Request
       ↓
 Analyze Response
       ↓
-Analyze Schema
+Analyze Schema (only when schema validation is required)
       ↓
 Create / Update Routes
       ↓
-Create / Update Schemas
+Create / Update Schemas (only when required)
       ↓
 Create / Update Test Data
       ↓
@@ -612,7 +618,10 @@ Replace placeholders before use: `Routes.GET_RESOURCE_BY_ID.replace('{id}', Stri
 
 # 13. API Schemas
 
-API response/request schemas (`api/schemas/`) should be created or updated when schema validation is required.
+API response/request schemas (`api/schemas/`) are optional. Create or update one only
+when the scenario requires JSON-schema validation; merely having a schema file does
+not make a test validate against it. Existing API specs may validate response fields
+directly without loading a schema.
 
 Before creating a schema:
 
@@ -635,7 +644,7 @@ Schema definitions must reflect the actual API response/request structure. Do no
 
 Web and API tests should use the framework's shared test-data architecture:
 
-- For **dynamic data**, use a Faker-backed random-data utility (conventionally `utils/dataGenerator.ts` exporting a class such as `RandomDataUtil`) that wraps Faker's person/location/date/commerce APIs, plus `generate<Resource>Payload()` / `generateUpdated<Resource>Payload()` builders for API create/update payloads.
+- For **dynamic data**, reuse the Faker-backed `DataGenerator` in `utils/dataGenerator.ts` (or the project's established equivalent). It provides person/commerce helpers and API payload builders such as `generateProductPayload()` and `generateUpdatedProductPayload()`.
 - For **fixed/known data** (e.g. a known product, known login credentials used across many tests), use a small fixed-data helper (conventionally `utils/helper.ts` exporting a class such as `Helper`).
 - For **reading external/static test data** (JSON/CSV/Excel), use a data-reader utility (conventionally `utils/DataReader.ts` exporting a class such as `DataProvider` with `readJson` / `readCsv` / `readExcel` methods).
 
@@ -676,7 +685,7 @@ Rules for any utility file:
 
 # 16. Environment Configuration (Web + API + DB)
 
-All environment-specific configuration and sensitive values must be centralized in `.env` (and, where present, `.env.example`):
+Keep environment-specific configuration outside test implementations in the project's established configuration source. This repository uses per-environment profile files and CI-injected secrets rather than a root `.env` file:
 
 ```text
 # Web
@@ -689,7 +698,7 @@ TOKEN
 CLIENT_ID
 CLIENT_SECRET
 
-# DB
+# Database
 DB_HOST
 DB_PORT
 DB_USER
@@ -698,17 +707,16 @@ DB_NAME
 
 ADMIN_USERNAME
 ADMIN_PASSWORD
-
 ```
 
-The exact variable names, defaults, and any additional application-specific variables (resource IDs, limits, date ranges, credentials, table names) are defined by the project's `.env` / `.env.example` and by the supplied test prompt(s) — never invented by the agent.
+The checked-in templates are `config/environments/.env.dev.example`, `.env.qa.example`, and `.env.uat.example`. For local execution, copy one to its matching ignored profile file (`.env.dev`, `.env.qa`, or `.env.uat`) and add local credentials there if needed. The CI pipelines use `scripts/prepare-ci-env.ps1` to merge template values with Jenkins Credentials. Never put secrets in a committed file.
 
 Rules:
 
-- Check `.env` and `.env.example` first.
+- Check the existing selected profile template and `utils/environment.ts` first.
 - Check `playwright.config.ts` for already-wired configuration.
 - Reuse existing environment configuration; never duplicate the same value across multiple files.
-- Read config via `process.env.X` with a sensible fallback where appropriate; call `dotenv.config()` at the top of API and DB specs (Web fixtures typically already load it once).
+- Reuse existing environment-loading helpers. In this repository, API specs should use `utils/environment.ts`; do not call `dotenv.config()` again in those specs. Follow existing DB-specific environment setup for DB tests.
 - Never hard-code secrets, credentials, tokens, or environment-specific URLs directly inside test files, route files, schema files, utility files, or any file committed to source control.
 - Never expose secrets in logs, console output, or reports.
 
@@ -717,22 +725,32 @@ Rules:
 # 17. API Test Conventions (`tests/api/`)
 
 - **Import from `@playwright/test` directly** (API tests do NOT use the custom Web page fixtures): `import { test, expect } from '@playwright/test';`
-- Import the project's random-data utility and call `dotenv.config()` at the top of the spec.
+- Import the project's random-data utility.
+- Reuse `utils/environment.ts` for environment selection and required URL validation when it exists. In this repository, importing `getRequiredUrl` loads the selected local profile or uses CI-injected variables; do not add a second `dotenv.config()` call to API specs.
 - Group tests in `test.describe('<ApiName> API Tests', () => { ... })` (use `test.describe.serial` for sequential CRUD workflows).
 - Declare env-driven config constants at the top of the describe block:
-  - `const BASE_URL = process.env.API_BASE_URL || '<project default>';`
+  - Prefer `const BASE_URL = getRequiredUrl('API_BASE_URL').replace(/\/+$/, '');` when using this repository's environment helper.
   - Resource IDs, limits, date ranges, and credentials similarly, sourced from `.env` or the test prompt.
 - Use section separator comments around each group (Configuration / GET / POST / PUT / DELETE).
 - **Prefer the `Routes` constants** from `api/endpoints/routes.ts`; URLs may also be built inline with template literals when routes are not yet centralized.
 - Payloads come from the random-data utility's `generate<Resource>Payload()`, `generateUpdated<Resource>Payload()`, etc.
 - Assertions: `expect(response.status()).toBe(...)`, `await response.json()`, `Array.isArray(...)`, `length`, field equality, sorting checks, and per-item validation with `forEach`.
-- CRUD tests create a resource, assert the create status code, capture the generated `id`, then update/delete using that id; cleanup delete is done inside the same test.
-- Schema tests load schemas with the project's data-reader utility, compile with the validator, and `expect(isValid).toBeTruthy()`.
+- For sequential CRUD workflows, capture the created `id` and use it in later update/delete requests; use serial tests when separate test cases share that state.
+- Schema validation is not automatic. When required by the scenario, explicitly load the schema, compile it with the validator, and assert that validation succeeds.
 - Test titles follow the pattern `'GET - All <Resources> @master @sanity @api'`, `'POST - Create <Resource> @master @regression @api'`.
+
+### Current Product API Spec
+
+`tests/api/products.spec.ts` is the concrete CRUD example for this repository:
+
+- It imports Playwright's `test` and `expect` directly and uses the built-in `{ request }` fixture; `fixtures/pageFixtures.ts` is for web page objects and is not part of this API flow.
+- It gets `API_BASE_URL` through `utils/environment.ts`, uses `DataGenerator` for create/update payloads, and gets endpoint paths from `api/endpoints/routes.ts`.
+- Its serial tests perform GET-all, POST, GET-by-configured-ID, PUT-by-created-ID, then DELETE-by-created-ID.
+- It checks status codes and response properties directly. It does not import `api/schemas/product_api_schema.json` or perform JSON-schema validation.
 
 ### API Test Creation Checklist
 
-Only after analyzing and preparing the required routes, schemas, test data, utilities, and environment configuration should the AI agent create the API test.
+Only after analyzing the required routes, test data, utilities, and environment configuration should the AI agent create the API test. Prepare schemas only when the scenario requires schema validation.
 
 API tests should validate:
 
@@ -749,18 +767,17 @@ API tests should validate:
 
 ```ts
 import { test, expect } from '@playwright/test';
-import { RandomDataUtil } from '../../utils/dataGenerator';
-import dotenv from 'dotenv';
+import { DataGenerator } from '../../utils/dataGenerator';
+import { Routes } from '../../api/endpoints/routes';
+import { getRequiredUrl } from '../../utils/environment';
 
-dotenv.config();
-
-test.describe('<Resource> API Tests', () => {
+test.describe.serial('<Resource> API Tests', () => {
 
     // ---------------------------------------------------------
     // Configuration
     // ---------------------------------------------------------
 
-    const BASE_URL = process.env.API_BASE_URL || 'https://api.example.com';
+    const BASE_URL = getRequiredUrl('API_BASE_URL').replace(/\/+$/, '');
     const RESOURCE_ID = Number(process.env.RESOURCE_ID ?? 1);
 
     // ---------------------------------------------------------
@@ -769,7 +786,7 @@ test.describe('<Resource> API Tests', () => {
 
     test('GET - All <Resources> @master @sanity', async ({ request }) => {
 
-        const response = await request.get(`${BASE_URL}/<resources>`);
+        const response = await request.get(`${BASE_URL}${Routes.GET_ALL_RESOURCES}`);
 
         expect(response.status()).toBe(200);
 
@@ -785,9 +802,9 @@ test.describe('<Resource> API Tests', () => {
 
     test('POST - Create <Resource> @master @regression', async ({ request }) => {
 
-        const payload = RandomDataUtil.generate<Resource>Payload();
+        const payload = DataGenerator.generate<Resource>Payload();
 
-        const createResponse = await request.post(`${BASE_URL}/<resources>`, { data: payload });
+        const createResponse = await request.post(`${BASE_URL}${Routes.CREATE_RESOURCE}`, { data: payload });
 
         expect(createResponse.status()).toBe(201);
 
@@ -795,9 +812,7 @@ test.describe('<Resource> API Tests', () => {
 
         expect(created.id).toBeTruthy();
 
-        // DELETE - Cleanup Created Resource
-        const deleteResponse = await request.delete(`${BASE_URL}/<resources>/${created.id}`);
-        expect(deleteResponse.status()).toBe(200);
+        // Use the captured ID in subsequent serial update/delete tests when the scenario requires them.
     });
 });
 ```
@@ -853,11 +868,12 @@ Web Testing
 → Web Tests
 
 API Testing
-→ Routes
-→ Schemas
+→ Environment + endpoint routes
+→ Built-in request fixture
 → Utilities
 → Test Data
-→ API Tests
+→ API request / response assertions
+→ Optional schema validation (only when required)
 
 DB Testing
 → DB Configuration
@@ -997,13 +1013,15 @@ Web Tests
 ```text
 Endpoint Analysis
         ↓
-Routes
+Environment + Routes
         ↓
-Schemas
+Playwright request fixture
         ↓
-Test Data / Utilities
+Utilities / Test Data (when needed)
         ↓
-API Tests
+API Tests + response assertions
+        ↓
+Optional Schema Validation (when required)
 ```
 
 **For DB:**
@@ -1058,7 +1076,7 @@ Before considering a task complete, the AI agent must verify:
 - Fixtures are correctly wired.
 - Page Objects are correctly connected to fixtures.
 - Routes are correct.
-- Schemas match actual API responses.
+- When schema validation is required, schemas match actual API responses.
 - Test data is valid.
 - `.env` configuration is correctly referenced.
 - Tests compile (`npx tsc --noEmit` when the project uses strict mode).
@@ -1082,7 +1100,7 @@ Before considering a task complete, the AI agent must verify:
 | Page fixture wiring | Web scenarios that use page objects | §10 Custom Fixtures (type + `base.extend`) |
 | Simple API resource suite | API test prompt | §17 API Test Conventions + template |
 | Auth API tests | API test prompt | §12 Routes + §17 |
-| JSON-schema validation | API test prompt | §13 Schemas + §17 schema-test pattern |
+| JSON-schema validation | API test prompt that requires it | §13 Schemas + explicit schema-test pattern |
 | DB-backed test | DB test prompt | §18 DB Testing Support |
 | Combined Web+API+DB journey | Combined test prompt | §19 Test Separation + §25 Dependency Order |
 
@@ -1156,14 +1174,13 @@ Playwright + TypeScript
 │   └── Web Tests
 │
 ├── API Testing
-│   ├── Routes / Endpoints
-│   ├── Schemas
-│   ├── Test Data
+│   ├── Environment + Routes / Endpoints
+│   ├── Playwright request fixture
+│   ├── Test Data (when required)
 │   ├── Random-Data Utility
 │   ├── Data-Reader Utility
-│   ├── Utilities
-│   ├── .env
-│   └── API Tests
+│   ├── Optional Schemas (only for tests that validate them)
+│   └── API Tests + Response Assertions
 │
 └── DB Testing
     ├── Configuration
